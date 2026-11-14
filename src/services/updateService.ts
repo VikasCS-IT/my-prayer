@@ -85,6 +85,34 @@ class UpdateService {
     }
   }
 
+  // Automatically check & download in background on app start without disturbing the user
+  async autoCheckAndDownloadInBackground(): Promise<{ isNewDownloaded: boolean }> {
+    if (Platform.OS === 'web' || __DEV__) return { isNewDownloaded: false };
+
+    try {
+      const checkResult = await Updates.checkForUpdateAsync();
+      if (checkResult.isAvailable) {
+        const fetchResult = await Updates.fetchUpdateAsync();
+        if (fetchResult.isNew) {
+          this.status.isDownloaded = true;
+          return { isNewDownloaded: true };
+        }
+      }
+    } catch (e) {
+      // Background check failed silently (e.g. offline)
+    }
+    return { isNewDownloaded: false };
+  }
+
+  // Reload the app to apply the downloaded update immediately
+  async reloadApp() {
+    try {
+      await Updates.reloadAsync();
+    } catch (e) {
+      console.warn('Reload error:', e);
+    }
+  }
+
   // Download the update from your server and immediately reload the app
   async downloadAndApplyUpdate(): Promise<{ success: boolean; message: string }> {
     if (Platform.OS === 'web' || __DEV__) {

@@ -1,0 +1,65 @@
+name: Manual - Build Native App (APK / AAB)
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Target platform to build'
+        required: true
+        default: 'android'
+        type: choice
+        options:
+          - android
+          - all
+      profile:
+        description: 'Build profile (preview = APK for direct phone install, production = Play Store AAB)'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+      message:
+        description: 'Build notes (e.g. Added new audio/native library)'
+        required: false
+        default: 'Native build test'
+
+jobs:
+  build_native:
+    name: Build Native Binary (${{ github.ref_name }})
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Selected Branch (${{ github.ref_name }})
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: 🔍 TypeScript Verification
+        run: npx tsc --noEmit
+
+      - name: 🚀 Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: 🏗️ Trigger EAS Cloud Build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          PLATFORM="${{ inputs.platform }}"
+          PROFILE="${{ inputs.profile }}"
+          BRANCH="${{ github.ref_name }}"
+          echo "=========================================="
+          echo "🚀 Starting EAS Build"
+          echo "🌿 Git Branch : $BRANCH"
+          echo "📱 Platform   : $PLATFORM"
+          echo "⚙️ Profile    : $PROFILE"
+          echo "📝 Notes      : ${{ inputs.message }}"
+          echo "=========================================="
+          eas build --platform "$PLATFORM" --profile "$PROFILE" --non-interactive --no-wait

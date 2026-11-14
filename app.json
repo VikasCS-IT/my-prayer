@@ -31,9 +31,11 @@
       "expo-updates"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sid.myprayer"
     },
     "android": {
+      "package": "com.sid.myprayer",
       "adaptiveIcon": {
         "backgroundColor": "#FF6F00",
         "foregroundImage": "./assets/android-icon-foreground.png",
