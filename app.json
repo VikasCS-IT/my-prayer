@@ -29,7 +29,8 @@
     "plugins": [
       "expo-router",
       "expo-updates",
-      "expo-font"
+      "expo-font",
+      "./plugins/withProguard"
     ],
     "ios": {
       "supportsTablet": true,
