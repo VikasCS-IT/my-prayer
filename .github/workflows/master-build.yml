@@ -48,16 +48,14 @@ jobs:
       - name: 🔍 TypeScript Verification
         run: npx tsc --noEmit
 
-      - name: 🚀 Setup Expo & EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: 🚀 Install EAS CLI
+        run: npm install -g eas-cli
 
-      - name: 🏗️ Trigger EAS Build (New Dependencies & Native Binary)
+      - name: 🏗️ Trigger EAS Cloud Build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           PLATFORM="${{ github.event.inputs.platform || 'android' }}"
           PROFILE="${{ github.event.inputs.profile || 'production' }}"
           echo "Building for platform: $PLATFORM with profile: $PROFILE"
-          npx eas-cli build --platform $PLATFORM --profile $PROFILE --non-interactive --no-wait
-
+          eas build --platform $PLATFORM --profile $PROFILE --non-interactive --no-wait
