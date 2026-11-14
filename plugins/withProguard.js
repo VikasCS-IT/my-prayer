@@ -51,8 +51,10 @@ module.exports = function withAndroidCustomizations(config) {
       }
     };
 
+    // minSdkVersion 24 covers Android 7.0, 8.0, 9.0 (API 28), and 10.0 (API 29)
+    // compileSdkVersion 37 satisfies modern AndroidX requirements (androidx.core 1.17.0 / androidx.transition 1.7.0)
     setProperty('android.minSdkVersion', '24');
-    setProperty('android.compileSdkVersion', '34');
+    setProperty('android.compileSdkVersion', '37');
     setProperty('android.targetSdkVersion', '34');
 
     return config;

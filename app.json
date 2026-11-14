@@ -31,7 +31,8 @@
       "expo-updates",
       "expo-font",
       "./plugins/withProguard",
-      "expo-audio"
+      "expo-audio",
+      "expo-asset"
     ],
     "ios": {
       "supportsTablet": true,
