@@ -9,6 +9,9 @@ on:
       - 'OTA_UPDATES_GUIDE.md'
       - '.gitignore'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   ota_production:
     name: Typecheck & Publish Production OTA
@@ -38,4 +41,3 @@ jobs:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           eas update --branch production --message "Production OTA: ${{ github.event.head_commit.message || github.sha }}" --non-interactive
-
