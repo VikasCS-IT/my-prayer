@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Component, ReactNode, ErrorInfo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { AppProvider, useApp } from '../src/context';
 import { Colors } from '../src/theme/colors';
 import { updateService } from '../src/services/updateService';
@@ -11,6 +10,45 @@ import { updateService } from '../src/services/updateService';
 export const unstable_settings = {
   anchor: '(tabs)',
 };
+
+// Error Boundary to prevent standalone release crashes
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class SafeErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('App Boundary Catch:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorEmoji}>🌸</Text>
+          <Text style={styles.errorTitle}>माई प्रेयर (My Prayer)</Text>
+          <Text style={styles.errorSubtitle}>
+            {this.state.error?.message || 'ऐप लोड करने में समस्या आई'}
+          </Text>
+          <TouchableOpacity
+            onPress={() => this.setState({ hasError: false, error: null })}
+            style={styles.retryBtn}
+          >
+            <Text style={styles.retryBtnText}>पुनः खोलें (Retry)</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function RootNavigation() {
   const { hasCompletedOnboarding, isLoading, isDarkMode } = useApp();
@@ -22,20 +60,28 @@ function RootNavigation() {
   useEffect(() => {
     if (isLoading) return;
 
-    const inOnboarding = segments[0] === 'onboarding';
+    try {
+      const inOnboarding = segments[0] === 'onboarding';
 
-    if (!hasCompletedOnboarding && !inOnboarding) {
-      router.replace('/onboarding');
+      if (!hasCompletedOnboarding && !inOnboarding) {
+        router.replace('/onboarding');
+      }
+    } catch (e) {
+      console.warn('Navigation redirect notice:', e);
     }
-  }, [hasCompletedOnboarding, isLoading, segments]);
+  }, [hasCompletedOnboarding, isLoading, segments, router]);
 
   // Silent automatic OTA background check on launch
   useEffect(() => {
     async function checkAutoOTA() {
-      if (Platform.OS === 'web') return;
-      const result = await updateService.autoCheckAndDownloadInBackground();
-      if (result.isNewDownloaded) {
-        setHasDownloadedOTA(true);
+      try {
+        if (Platform.OS === 'web') return;
+        const result = await updateService.autoCheckAndDownloadInBackground();
+        if (result?.isNewDownloaded) {
+          setHasDownloadedOTA(true);
+        }
+      } catch {
+        // Safe catch - never interrupt app startup
       }
     }
     checkAutoOTA();
@@ -45,7 +91,7 @@ function RootNavigation() {
     <>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
 
-      {/* Gentle OTA Notification Banner (Auto updates silently, user doesn't need to do anything) */}
+      {/* Gentle OTA Notification Banner */}
       {hasDownloadedOTA && (
         <View style={styles.otaBanner}>
           <View style={styles.otaBannerLeft}>
@@ -99,6 +145,41 @@ function RootNavigation() {
 }
 
 const styles = StyleSheet.create({
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: '#FFFDF9',
+  },
+  errorEmoji: {
+    fontSize: 36,
+    marginBottom: 12,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#D84315',
+    marginBottom: 8,
+  },
+  errorSubtitle: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 18,
+  },
+  retryBtn: {
+    backgroundColor: '#FF6F00',
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+  },
+  retryBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
+  },
   otaBanner: {
     backgroundColor: '#FFF3E0',
     borderBottomWidth: 1,
@@ -147,11 +228,12 @@ const styles = StyleSheet.create({
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <AppProvider>
-        <RootNavigation />
-      </AppProvider>
-    </SafeAreaProvider>
+    <SafeErrorBoundary>
+      <SafeAreaProvider>
+        <AppProvider>
+          <RootNavigation />
+        </AppProvider>
+      </SafeAreaProvider>
+    </SafeErrorBoundary>
   );
 }
-

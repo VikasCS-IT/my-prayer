@@ -21,40 +21,51 @@ class UpdateService {
     isDownloading: false,
     isDownloaded: false,
     lastCheckedDate: null,
-    currentUpdateId: Updates.updateId || null,
-    runtimeVersion: Updates.runtimeVersion || '1.0.0',
-    channel: Updates.channel || 'production',
-    isEmbeddedLaunch: Updates.isEmbeddedLaunch,
+    currentUpdateId: null,
+    runtimeVersion: '1.0.0',
+    channel: 'production',
+    isEmbeddedLaunch: true,
     errorMessage: null,
   };
 
   getStatus(): UpdateStatus {
-    return {
-      ...this.status,
-      currentUpdateId: Updates.updateId || null,
-      runtimeVersion: Updates.runtimeVersion || '1.0.0',
-      channel: Updates.channel || 'production',
-      isEmbeddedLaunch: Updates.isEmbeddedLaunch,
-    };
+    try {
+      return {
+        ...this.status,
+        currentUpdateId: Updates?.updateId || null,
+        runtimeVersion: Updates?.runtimeVersion || '1.0.0',
+        channel: Updates?.channel || 'production',
+        isEmbeddedLaunch: Updates?.isEmbeddedLaunch ?? true,
+      };
+    } catch {
+      return this.status;
+    }
   }
 
-  // Check if an update exists on your server (EAS or Self-Hosted server)
+  // Check if an update exists on your server
   async checkForUpdate(): Promise<{ hasUpdate: boolean; message: string }> {
     if (Platform.OS === 'web') {
       return {
         hasUpdate: false,
-        message: 'वेब प्लेटफॉर्म पर हमेशा नवीनतम संस्करण लोड होता है (Web always runs latest bundle).',
+        message: 'वेब प्लेटफॉर्म पर हमेशा नवीनतम संस्करण लोड होता है।',
       };
     }
 
     if (__DEV__) {
       return {
         hasUpdate: false,
-        message: 'विकास मोड (Development Mode) में लाइव रीलोड सक्रिय है। ओटीए अपडेट्स केवल प्रोडक्शन बिल्ड (APK/AAB) में सक्रिय होते हैं।',
+        message: 'विकास मोड (Development Mode) में लाइव रीलोड सक्रिय है।',
       };
     }
 
     try {
+      if (!Updates.isEnabled) {
+        return {
+          hasUpdate: false,
+          message: 'ओटीए अपडेट्स इस बिल्ड में सक्रिय नहीं हैं।',
+        };
+      }
+
       this.status.isChecking = true;
       this.status.errorMessage = null;
 
@@ -62,7 +73,7 @@ class UpdateService {
       this.status.lastCheckedDate = new Date();
       this.status.isChecking = false;
 
-      if (checkResult.isAvailable) {
+      if (checkResult?.isAvailable) {
         this.status.isAvailable = true;
         return {
           hasUpdate: true,
@@ -72,7 +83,7 @@ class UpdateService {
         this.status.isAvailable = false;
         return {
           hasUpdate: false,
-          message: 'आपका ऐप पहले से ही नवीनतम संस्करण पर है। कोई नया अपडेट नहीं मिला।',
+          message: 'आपका ऐप पहले से ही नवीनतम संस्करण पर है।',
         };
       }
     } catch (error: any) {
@@ -87,68 +98,80 @@ class UpdateService {
 
   // Automatically check & download in background on app start without disturbing the user
   async autoCheckAndDownloadInBackground(): Promise<{ isNewDownloaded: boolean }> {
-    if (Platform.OS === 'web' || __DEV__) return { isNewDownloaded: false };
-
     try {
+      if (Platform.OS === 'web' || __DEV__) return { isNewDownloaded: false };
+      if (!Updates.isEnabled) return { isNewDownloaded: false };
+
       const checkResult = await Updates.checkForUpdateAsync();
-      if (checkResult.isAvailable) {
+      if (checkResult?.isAvailable) {
         const fetchResult = await Updates.fetchUpdateAsync();
-        if (fetchResult.isNew) {
+        if (fetchResult?.isNew) {
           this.status.isDownloaded = true;
           return { isNewDownloaded: true };
         }
       }
-    } catch (e) {
-      // Background check failed silently (e.g. offline)
-    }
-    return { isNewDownloaded: false };
-  }
-
-  // Reload the app to apply the downloaded update immediately
-  async reloadApp() {
-    try {
-      await Updates.reloadAsync();
-    } catch (e) {
-      console.warn('Reload error:', e);
+      return { isNewDownloaded: false };
+    } catch {
+      // Safe catch - NEVER throw or crash the app on launch
+      return { isNewDownloaded: false };
     }
   }
 
   // Download the update from your server and immediately reload the app
   async downloadAndApplyUpdate(): Promise<{ success: boolean; message: string }> {
     if (Platform.OS === 'web' || __DEV__) {
-      return { success: false, message: 'ओटीए अपडेट केवल प्रोडक्शन ऐप (APK/AAB) पर लागू होता है।' };
+      return {
+        success: false,
+        message: 'Development मोड में अपडेट डाउनलोड लागू नहीं किया जा सकता।',
+      };
     }
 
     try {
+      if (!Updates.isEnabled) {
+        return {
+          success: false,
+          message: 'ओटीए अपडेट्स इस बिल्ड में सक्रिय नहीं हैं।',
+        };
+      }
+
       this.status.isDownloading = true;
       const fetchResult = await Updates.fetchUpdateAsync();
-
       this.status.isDownloading = false;
-      this.status.isDownloaded = true;
 
-      if (fetchResult.isNew) {
-        // Reload app with newly fetched JS bundle & assets without reinstalling APK
-        await Updates.reloadAsync();
+      if (fetchResult?.isNew) {
+        this.status.isDownloaded = true;
+        await this.reloadApp();
         return {
           success: true,
-          message: 'अपडेट सफलतापूर्वक लागू किया गया! ऐप पुनः लोड हो रहा है...',
+          message: 'अपडेट सफलतापूर्वक लागू हो गया है!',
         };
       } else {
         return {
-          success: false,
-          message: 'नया बंडल उपलब्ध नहीं है।',
+          success: true,
+          message: 'ऐप पहले से ही अद्यतित है।',
         };
       }
     } catch (error: any) {
       this.status.isDownloading = false;
-      this.status.errorMessage = error?.message || 'डाउनलोड विफल रहा';
       return {
         success: false,
-        message: `अपडेट डाउनलोड में त्रुटि: ${this.status.errorMessage}`,
+        message: `अपडेट डाउनलोड में त्रुटि: ${error?.message || 'अज्ञात त्रुटि'}`,
       };
+    }
+  }
+
+  // Reload the app to apply the newly downloaded update immediately
+  async reloadApp(): Promise<void> {
+    try {
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.location.reload();
+        return;
+      }
+      await Updates.reloadAsync();
+    } catch (error: any) {
+      console.warn('Reload notice:', error);
     }
   }
 }
 
 export const updateService = new UpdateService();
-

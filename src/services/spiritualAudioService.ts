@@ -1,22 +1,12 @@
 import { Platform } from 'react-native';
 
-// Safe module loading for expo-audio (modern Expo SDK) and expo-av (legacy)
+// Safe module loading for expo-audio (modern Expo SDK)
 let ExpoAudioModule: any = null;
-let LegacyAudioModule: any = null;
-
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   ExpoAudioModule = require('expo-audio');
 } catch {
   // expo-audio not available
-}
-
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const av = require('expo-av');
-  LegacyAudioModule = av?.Audio || null;
-} catch {
-  // expo-av not available
 }
 
 // Local offline sound assets
@@ -152,28 +142,19 @@ class WebSpiritualSynthesizer {
 export const webAudioSynthesizer = new WebSpiritualSynthesizer();
 
 export class SpiritualAudioPlayer {
-  private player: any = null; // expo-audio player
-  private legacySound: any = null; // expo-av sound
-  private bellPlayer: any = null;
+  private player: any = null; // persistent singleton expo-audio player
+  private bellPlayer: any = null; // persistent temple bell player
   private isNative = Platform.OS !== 'web';
   private isPlaying = false;
   private isMuted = false;
 
   async init() {
     try {
-      if (this.isNative) {
-        if (ExpoAudioModule?.setAudioModeAsync) {
-          await ExpoAudioModule.setAudioModeAsync({
-            playsInSilentMode: true,
-            shouldPlayInBackground: true,
-          });
-        } else if (LegacyAudioModule?.setAudioModeAsync) {
-          await LegacyAudioModule.setAudioModeAsync({
-            playsInSilentModeIOS: true,
-            staysActiveInBackground: true,
-            shouldDuckAndroid: true,
-          });
-        }
+      if (this.isNative && ExpoAudioModule?.setAudioModeAsync) {
+        await ExpoAudioModule.setAudioModeAsync({
+          playsInSilentMode: true,
+          shouldPlayInBackground: true,
+        });
       }
     } catch (e) {
       console.warn('Audio init notice:', e);
@@ -216,25 +197,6 @@ export class SpiritualAudioPlayer {
       }
     }
 
-    // Legacy expo-av fallback
-    if (LegacyAudioModule?.Sound) {
-      try {
-        const source = audioUrl ? { uri: audioUrl } : SOUND_OM_DRONE;
-        if (!this.legacySound) {
-          const { sound } = await LegacyAudioModule.Sound.createAsync(
-            source,
-            { shouldPlay: true, isLooping: true, volume: this.isMuted ? 0 : 1.0 }
-          );
-          this.legacySound = sound;
-        } else {
-          await this.legacySound.playAsync();
-        }
-        return;
-      } catch (err) {
-        console.warn('legacy expo-av error:', err);
-      }
-    }
-
     // Fallback synthesizer
     webAudioSynthesizer.startSacredDrone();
   }
@@ -251,9 +213,6 @@ export class SpiritualAudioPlayer {
       if (this.player) {
         this.player.pause();
       }
-      if (this.legacySound) {
-        await this.legacySound.pauseAsync();
-      }
     } catch (e) {
       console.warn('Audio pause notice:', e);
     }
@@ -268,30 +227,12 @@ export class SpiritualAudioPlayer {
     // Native temple bell chime
     if (ExpoAudioModule?.createAudioPlayer) {
       try {
-        const bell = ExpoAudioModule.createAudioPlayer(SOUND_TEMPLE_BELL);
-        bell.volume = 0.9;
-        bell.play();
-        setTimeout(() => {
-          try {
-            bell.release();
-          } catch {}
-        }, 4000);
-        return;
-      } catch {}
-    }
-
-    if (LegacyAudioModule?.Sound) {
-      try {
-        LegacyAudioModule.Sound.createAsync(
-          SOUND_TEMPLE_BELL,
-          { shouldPlay: true, isLooping: false, volume: 0.9 }
-        ).then(({ sound }: any) => {
-          setTimeout(() => {
-            try {
-              sound.unloadAsync();
-            } catch {}
-          }, 4000);
-        });
+        if (!this.bellPlayer) {
+          this.bellPlayer = ExpoAudioModule.createAudioPlayer(SOUND_TEMPLE_BELL);
+          this.bellPlayer.loop = false;
+        }
+        this.bellPlayer.volume = 0.9;
+        this.bellPlayer.play();
         return;
       } catch {}
     }
@@ -307,19 +248,11 @@ export class SpiritualAudioPlayer {
       return;
     }
 
+    // Simply pause playback on unmount/stop without releasing native shared object
+    // to avoid native race condition with pending seekTo promises.
     try {
       if (this.player) {
         this.player.pause();
-        try {
-          this.player.seekTo(0);
-          this.player.release();
-        } catch {}
-        this.player = null;
-      }
-      if (this.legacySound) {
-        await this.legacySound.stopAsync();
-        await this.legacySound.unloadAsync();
-        this.legacySound = null;
       }
     } catch (e) {
       console.warn('Audio stop notice:', e);
@@ -329,9 +262,6 @@ export class SpiritualAudioPlayer {
   setVolume(volume: number) {
     if (this.player) {
       this.player.volume = volume;
-    }
-    if (this.legacySound) {
-      this.legacySound.setVolumeAsync(volume);
     }
     webAudioSynthesizer.setVolume(volume);
   }

@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = function withAndroidCustomizations(config) {
-  // 1. Proguard / R8 missing class suppressions for expo-av
+  // 1. Proguard / R8 missing class suppressions and keep rules for release builds
   config = withDangerousMod(config, [
     'android',
     async (config) => {
@@ -14,17 +14,24 @@ module.exports = function withAndroidCustomizations(config) {
       );
 
       const customRules = `
-# Proguard / R8 missing class suppressions for expo-av
--dontwarn expo.modules.av.**
--dontwarn expo.modules.core.**
--dontwarn expo.modules.kotlin.**
--dontwarn expo.modules.core.interfaces.services.KeepAwakeManager
--dontwarn expo.modules.kotlin.types.AnyTypeProvider
--dontwarn expo.modules.kotlin.types.LazyKType
+# Proguard / R8 rules for Expo modules in release builds
+-dontwarn expo.modules.**
+-dontwarn com.facebook.react.**
+-dontwarn androidx.**
 
--keep class expo.modules.av.** { *; }
--keep class expo.modules.core.** { *; }
--keep class expo.modules.kotlin.** { *; }
+# Keep Expo modules reflection & JNI interfaces
+-keep class expo.modules.** { *; }
+-keep interface expo.modules.** { *; }
+
+# Keep React Native core & TurboModules
+-keep class com.facebook.react.** { *; }
+-keep class com.swmansion.** { *; }
+
+# General keeps for annotations
+-keepattributes *Annotation*
+-keepclassmembers class * {
+    @androidx.annotation.Keep *;
+}
 `;
 
       if (fs.existsSync(proguardFile)) {
@@ -39,7 +46,7 @@ module.exports = function withAndroidCustomizations(config) {
 
   // 2. Set Android SDK versions:
   // minSdkVersion 24 covers Android 7.0, 8.0, 9.0 (API 28), and 10.0 (API 29)
-  // compileSdkVersion 34 and targetSdkVersion 34 target stable Android 14
+  // compileSdkVersion 37 satisfies modern AndroidX requirements (androidx.core 1.17.0 / androidx.transition 1.7.0)
   config = withGradleProperties(config, (config) => {
     const properties = config.modResults;
     const setProperty = (key, value) => {
@@ -51,8 +58,6 @@ module.exports = function withAndroidCustomizations(config) {
       }
     };
 
-    // minSdkVersion 24 covers Android 7.0, 8.0, 9.0 (API 28), and 10.0 (API 29)
-    // compileSdkVersion 37 satisfies modern AndroidX requirements (androidx.core 1.17.0 / androidx.transition 1.7.0)
     setProperty('android.minSdkVersion', '24');
     setProperty('android.compileSdkVersion', '37');
     setProperty('android.targetSdkVersion', '34');
@@ -62,4 +67,3 @@ module.exports = function withAndroidCustomizations(config) {
 
   return config;
 };
-
