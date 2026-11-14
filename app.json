@@ -28,7 +28,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-updates"
+      "expo-updates",
+      "expo-font"
     ],
     "ios": {
       "supportsTablet": true,
