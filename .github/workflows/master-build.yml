@@ -1,0 +1,61 @@
+name: Master - Build Native App (APK/AAB)
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - 'README.md'
+      - 'OTA_UPDATES_GUIDE.md'
+      - '.gitignore'
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Target platform to build'
+        required: true
+        default: 'android'
+        type: choice
+        options:
+          - android
+          - all
+      profile:
+        description: 'Build profile (from eas.json)'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - preview
+
+jobs:
+  build_native:
+    name: Build Native App on Master Merge
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: 🔍 TypeScript Verification
+        run: npx tsc --noEmit
+
+      - name: 🚀 Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: 🏗️ Trigger EAS Cloud Build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          PLATFORM="${{ github.event.inputs.platform || 'android' }}"
+          PROFILE="${{ github.event.inputs.profile || 'production' }}"
+          echo "Building for platform: $PLATFORM with profile: $PROFILE"
+          eas build --platform $PLATFORM --profile $PROFILE --non-interactive --no-wait

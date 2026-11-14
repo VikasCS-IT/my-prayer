@@ -1,18 +1,17 @@
-name: Deploy OTA Update to Production
+name: Dev - Publish OTA Update
 
 on:
   push:
     branches:
-      - main
-      - master
+      - dev
     paths-ignore:
       - 'README.md'
       - 'OTA_UPDATES_GUIDE.md'
       - '.gitignore'
 
 jobs:
-  typecheck_and_deploy:
-    name: Typecheck and Publish OTA Update
+  ota_update:
+    name: Typecheck & Publish Dev OTA
     runs-on: ubuntu-latest
 
     steps:
@@ -31,13 +30,11 @@ jobs:
       - name: 🔍 TypeScript Verification
         run: npx tsc --noEmit
 
-      - name: 🚀 Setup Expo & EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: 🚀 Install EAS CLI
+        run: npm install -g eas-cli
 
-      - name: 📲 Publish Over-The-Air (OTA) Update
+      - name: 📲 Publish Dev OTA Update
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          npx eas-cli update --branch production --message "Automated update from commit ${{ github.sha }}" --non-interactive
-
+          eas update --branch dev --message "Dev OTA: ${{ github.event.head_commit.message || github.sha }}" --non-interactive
