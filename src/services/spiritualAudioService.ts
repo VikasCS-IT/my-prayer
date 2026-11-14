@@ -1,7 +1,29 @@
 import { Platform } from 'react-native';
-import { Audio } from 'expo-av';
 
-// Web Audio API Synthesizer for instant, zero-latency, 100% offline spiritual sound
+// Safe module loading for expo-audio (modern Expo SDK) and expo-av (legacy)
+let ExpoAudioModule: any = null;
+let LegacyAudioModule: any = null;
+
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  ExpoAudioModule = require('expo-audio');
+} catch {
+  // expo-audio not available
+}
+
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const av = require('expo-av');
+  LegacyAudioModule = av?.Audio || null;
+} catch {
+  // expo-av not available
+}
+
+// Local offline sound assets
+const SOUND_OM_DRONE = require('../../assets/sounds/om_drone.wav');
+const SOUND_TEMPLE_BELL = require('../../assets/sounds/temple_bell.wav');
+
+// Web Audio API Synthesizer for web browsers
 class WebSpiritualSynthesizer {
   private ctx: any = null;
   private masterGain: any = null;
@@ -26,15 +48,13 @@ class WebSpiritualSynthesizer {
     }
   }
 
-  // Play a rich sacred temple bell / Tibetan singing bowl chime (घंटी)
   playTempleBell() {
     this.initContext();
     if (!this.ctx) return;
 
     try {
       const now = this.ctx.currentTime;
-      // Fundamental frequencies of an auspicious temple brass bell
-      const bellFreqs = [528, 1056, 1584, 2112]; // Solfeggio / brass harmonics
+      const bellFreqs = [528, 1056, 1584, 2112];
       bellFreqs.forEach((freq, idx) => {
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
@@ -42,7 +62,6 @@ class WebSpiritualSynthesizer {
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, now);
 
-        // Exponential decay for realistic bell resonance
         const initialVol = 0.25 / (idx + 1);
         gain.gain.setValueAtTime(initialVol, now);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5 + idx * 0.4);
@@ -58,7 +77,6 @@ class WebSpiritualSynthesizer {
     }
   }
 
-  // Start continuous meditative Tanpura & Om chord drone (136.1 Hz Pranav Om frequency)
   startSacredDrone() {
     this.initContext();
     if (!this.ctx || this.isSynthesizing) return;
@@ -68,7 +86,6 @@ class WebSpiritualSynthesizer {
       this.isSynthesizing = true;
       this.oscillators = [];
 
-      // Pranav Om fundamental (136.1 Hz) + Tanpura Pa-Sa harmonics (204.15 Hz, 272.2 Hz, 408.3 Hz)
       const droneHarmonics = [
         { freq: 136.1, type: 'triangle', vol: 0.2 },
         { freq: 204.15, type: 'sine', vol: 0.12 },
@@ -76,10 +93,9 @@ class WebSpiritualSynthesizer {
         { freq: 408.3, type: 'sine', vol: 0.05 },
       ];
 
-      // Subtle LFO for breathing drone effect
       const lfo = this.ctx.createOscillator();
       const lfoGain = this.ctx.createGain();
-      lfo.frequency.setValueAtTime(0.2, now); // 0.2 Hz slow meditative cycle
+      lfo.frequency.setValueAtTime(0.2, now);
       lfoGain.gain.setValueAtTime(0.05, now);
       lfo.connect(lfoGain);
       lfo.start(now);
@@ -92,10 +108,9 @@ class WebSpiritualSynthesizer {
         osc.frequency.setValueAtTime(h.freq, now);
 
         gain.gain.setValueAtTime(0.001, now);
-        gain.gain.linearRampToValueAtTime(h.vol, now + 1.2); // Smooth gentle fade in
+        gain.gain.linearRampToValueAtTime(h.vol, now + 1.2);
 
         lfoGain.connect(gain.gain);
-
         osc.connect(gain);
         gain.connect(this.masterGain || this.ctx.destination);
 
@@ -109,7 +124,6 @@ class WebSpiritualSynthesizer {
     }
   }
 
-  // Stop sacred drone smoothly
   stopSacredDrone() {
     if (!this.ctx || !this.isSynthesizing) return;
 
@@ -138,7 +152,9 @@ class WebSpiritualSynthesizer {
 export const webAudioSynthesizer = new WebSpiritualSynthesizer();
 
 export class SpiritualAudioPlayer {
-  private sound: Audio.Sound | null = null;
+  private player: any = null; // expo-audio player
+  private legacySound: any = null; // expo-av sound
+  private bellPlayer: any = null;
   private isNative = Platform.OS !== 'web';
   private isPlaying = false;
   private isMuted = false;
@@ -146,95 +162,179 @@ export class SpiritualAudioPlayer {
   async init() {
     try {
       if (this.isNative) {
-        await Audio.setAudioModeAsync({
-          playsInSilentModeIOS: true,
-          staysActiveInBackground: true,
-          shouldDuckAndroid: true,
-        });
+        if (ExpoAudioModule?.setAudioModeAsync) {
+          await ExpoAudioModule.setAudioModeAsync({
+            playsInSilentMode: true,
+            shouldPlayInBackground: true,
+          });
+        } else if (LegacyAudioModule?.setAudioModeAsync) {
+          await LegacyAudioModule.setAudioModeAsync({
+            playsInSilentModeIOS: true,
+            staysActiveInBackground: true,
+            shouldDuckAndroid: true,
+          });
+        }
       }
     } catch (e) {
-      console.warn('Audio initialization notice:', e);
+      console.warn('Audio init notice:', e);
     }
   }
 
   async play(audioUrl?: string) {
     this.isPlaying = true;
 
+    // Web Browser execution
     if (Platform.OS === 'web') {
       if (audioUrl) {
-        // If web URL is provided, try native Audio element
         try {
           const audio = new window.Audio(audioUrl);
           audio.play().catch(() => {
-            // fallback to synth
             webAudioSynthesizer.startSacredDrone();
           });
           return;
         } catch {}
       }
-      // Zero-latency meditative drone + temple bell chime
       webAudioSynthesizer.startSacredDrone();
       return;
     }
 
-    // Native iOS/Android Audio playback
-    try {
-      if (audioUrl) {
-        if (!this.sound) {
-          const { sound } = await Audio.Sound.createAsync(
-            { uri: audioUrl },
-            { shouldPlay: true, isLooping: true }
-          );
-          this.sound = sound;
-        } else {
-          await this.sound.playAsync();
+    // Modern expo-audio (Native Android / iOS inside Expo Go & APK)
+    if (ExpoAudioModule?.createAudioPlayer) {
+      try {
+        const source = audioUrl ? { uri: audioUrl } : SOUND_OM_DRONE;
+
+        if (!this.player) {
+          this.player = ExpoAudioModule.createAudioPlayer(source);
+          this.player.loop = true;
         }
+
+        this.player.volume = this.isMuted ? 0 : 1.0;
+        this.player.play();
+        return;
+      } catch (err) {
+        console.warn('expo-audio player error:', err);
       }
-    } catch (e) {
-      console.warn('Native audio play notice:', e);
     }
+
+    // Legacy expo-av fallback
+    if (LegacyAudioModule?.Sound) {
+      try {
+        const source = audioUrl ? { uri: audioUrl } : SOUND_OM_DRONE;
+        if (!this.legacySound) {
+          const { sound } = await LegacyAudioModule.Sound.createAsync(
+            source,
+            { shouldPlay: true, isLooping: true, volume: this.isMuted ? 0 : 1.0 }
+          );
+          this.legacySound = sound;
+        } else {
+          await this.legacySound.playAsync();
+        }
+        return;
+      } catch (err) {
+        console.warn('legacy expo-av error:', err);
+      }
+    }
+
+    // Fallback synthesizer
+    webAudioSynthesizer.startSacredDrone();
   }
 
   async pause() {
     this.isPlaying = false;
+
     if (Platform.OS === 'web') {
       webAudioSynthesizer.stopSacredDrone();
       return;
     }
 
     try {
-      if (this.sound) {
-        await this.sound.pauseAsync();
+      if (this.player) {
+        this.player.pause();
+      }
+      if (this.legacySound) {
+        await this.legacySound.pauseAsync();
       }
     } catch (e) {
-      console.warn('Native audio pause error:', e);
+      console.warn('Audio pause notice:', e);
     }
   }
 
   ringTempleBell() {
     if (Platform.OS === 'web') {
       webAudioSynthesizer.playTempleBell();
+      return;
     }
+
+    // Native temple bell chime
+    if (ExpoAudioModule?.createAudioPlayer) {
+      try {
+        const bell = ExpoAudioModule.createAudioPlayer(SOUND_TEMPLE_BELL);
+        bell.volume = 0.9;
+        bell.play();
+        setTimeout(() => {
+          try {
+            bell.release();
+          } catch {}
+        }, 4000);
+        return;
+      } catch {}
+    }
+
+    if (LegacyAudioModule?.Sound) {
+      try {
+        LegacyAudioModule.Sound.createAsync(
+          SOUND_TEMPLE_BELL,
+          { shouldPlay: true, isLooping: false, volume: 0.9 }
+        ).then(({ sound }: any) => {
+          setTimeout(() => {
+            try {
+              sound.unloadAsync();
+            } catch {}
+          }, 4000);
+        });
+        return;
+      } catch {}
+    }
+
+    webAudioSynthesizer.playTempleBell();
   }
 
   async stop() {
     this.isPlaying = false;
+
     if (Platform.OS === 'web') {
       webAudioSynthesizer.stopSacredDrone();
       return;
     }
 
     try {
-      if (this.sound) {
-        await this.sound.stopAsync();
-        await this.sound.unloadAsync();
-        this.sound = null;
+      if (this.player) {
+        this.player.pause();
+        try {
+          this.player.seekTo(0);
+          this.player.release();
+        } catch {}
+        this.player = null;
+      }
+      if (this.legacySound) {
+        await this.legacySound.stopAsync();
+        await this.legacySound.unloadAsync();
+        this.legacySound = null;
       }
     } catch (e) {
-      console.warn('Native audio stop error:', e);
+      console.warn('Audio stop notice:', e);
     }
+  }
+
+  setVolume(volume: number) {
+    if (this.player) {
+      this.player.volume = volume;
+    }
+    if (this.legacySound) {
+      this.legacySound.setVolumeAsync(volume);
+    }
+    webAudioSynthesizer.setVolume(volume);
   }
 }
 
 export const spiritualAudioService = new SpiritualAudioPlayer();
-

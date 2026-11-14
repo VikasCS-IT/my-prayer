@@ -30,7 +30,8 @@
       "expo-router",
       "expo-updates",
       "expo-font",
-      "./plugins/withProguard"
+      "./plugins/withProguard",
+      "expo-audio"
     ],
     "ios": {
       "supportsTablet": true,

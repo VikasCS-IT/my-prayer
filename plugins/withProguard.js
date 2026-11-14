@@ -1,9 +1,10 @@
-const { withDangerousMod } = require('@expo/config-plugins');
+const { withDangerousMod, withGradleProperties } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
-module.exports = function withProguard(config) {
-  return withDangerousMod(config, [
+module.exports = function withAndroidCustomizations(config) {
+  // 1. Proguard / R8 missing class suppressions for expo-av
+  config = withDangerousMod(config, [
     'android',
     async (config) => {
       const proguardFile = path.join(
@@ -35,5 +36,28 @@ module.exports = function withProguard(config) {
       return config;
     },
   ]);
+
+  // 2. Set Android SDK versions:
+  // minSdkVersion 24 covers Android 7.0, 8.0, 9.0 (API 28), and 10.0 (API 29)
+  // compileSdkVersion 34 and targetSdkVersion 34 target stable Android 14
+  config = withGradleProperties(config, (config) => {
+    const properties = config.modResults;
+    const setProperty = (key, value) => {
+      const existing = properties.find((p) => p.type === 'property' && p.key === key);
+      if (existing) {
+        existing.value = value;
+      } else {
+        properties.push({ type: 'property', key, value });
+      }
+    };
+
+    setProperty('android.minSdkVersion', '24');
+    setProperty('android.compileSdkVersion', '34');
+    setProperty('android.targetSdkVersion', '34');
+
+    return config;
+  });
+
+  return config;
 };
 

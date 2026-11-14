@@ -8,6 +8,10 @@ import { AppProvider, useApp } from '../src/context';
 import { Colors } from '../src/theme/colors';
 import { updateService } from '../src/services/updateService';
 
+export const unstable_settings = {
+  anchor: '(tabs)',
+};
+
 function RootNavigation() {
   const { hasCompletedOnboarding, isLoading, isDarkMode } = useApp();
   const segments = useSegments();
