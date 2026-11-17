@@ -1,19 +1,20 @@
 # Proguard / R8 rules for Expo & React Native
 
-# expo-av reflection and keep-awake compatibility
--dontwarn expo.modules.av.**
--dontwarn expo.modules.core.**
--dontwarn expo.modules.kotlin.**
--dontwarn expo.modules.core.interfaces.services.KeepAwakeManager
+# Suppress missing class warnings for all Expo modules and React Native
+-dontwarn expo.modules.**
+-dontwarn com.facebook.react.**
+-dontwarn androidx.**
 
--keep class expo.modules.av.** { *; }
--keep class expo.modules.core.** { *; }
--keep class expo.modules.kotlin.** { *; }
--keep class expo.modules.core.interfaces.services.** { *; }
+# Keep Expo modules reflection & JNI interfaces
+-keep class expo.modules.** { *; }
+-keep interface expo.modules.** { *; }
 
-# General React Native and Expo JNI keeps
+# Keep React Native core & TurboModules
+-keep class com.facebook.react.** { *; }
+-keep class com.swmansion.** { *; }
+
+# General keeps for annotations
 -keepattributes *Annotation*
 -keepclassmembers class * {
     @androidx.annotation.Keep *;
 }
-

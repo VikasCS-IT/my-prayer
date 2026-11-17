@@ -62,6 +62,13 @@ module.exports = function withAndroidCustomizations(config) {
     setProperty('android.compileSdkVersion', '37');
     setProperty('android.targetSdkVersion', '34');
 
+    // Disable R8 code shrinking in release builds to prevent stripping of JNI/TurboModule classes on Android
+    setProperty('android.enableMinifyInReleaseBuilds', 'false');
+    setProperty('android.enableShrinkResourcesInReleaseBuilds', 'false');
+
+    // Enable legacy packaging so native .so libraries are extracted and loaded reliably on Android 9 & 10
+    setProperty('expo.useLegacyPackaging', 'true');
+
     return config;
   });
 
