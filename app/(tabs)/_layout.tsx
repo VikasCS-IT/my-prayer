@@ -6,8 +6,16 @@ import { Colors } from '../../src/theme/colors';
 import { useApp } from '../../src/context';
 
 export default function TabsLayout() {
-  const { isDarkMode } = useApp();
+  const { isDarkMode, readingLanguage } = useApp();
   const theme = isDarkMode ? Colors.dark : Colors.light;
+
+  const isEnglishOnly = readingLanguage === 'english';
+  const isHindiOnly = readingLanguage === 'hindi';
+
+  const homeLabel = isEnglishOnly ? 'Home' : isHindiOnly ? 'मुख्य पृष्ठ' : 'मुख्य पृष्ठ (Home)';
+  const deitiesLabel = isEnglishOnly ? 'Deities' : isHindiOnly ? 'देवी-देवता' : 'देवी-देवता (Deities)';
+  const bookmarksLabel = isEnglishOnly ? 'Saved' : isHindiOnly ? 'सहेजे गए' : 'सहेजे गए (Saved)';
+  const profileLabel = isEnglishOnly ? 'Profile' : isHindiOnly ? 'प्रोफ़ाइल' : 'प्रोफ़ाइल (Profile)';
 
   return (
     <Tabs
@@ -38,7 +46,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarLabel: 'मुख्य पृष्ठ (Home)',
+          tabBarLabel: homeLabel,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'sparkles' : 'sparkles-outline'}
@@ -52,7 +60,7 @@ export default function TabsLayout() {
         name="deities"
         options={{
           title: 'Deities',
-          tabBarLabel: 'देवी-देवता (Deities)',
+          tabBarLabel: deitiesLabel,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'people' : 'people-outline'}
@@ -66,7 +74,7 @@ export default function TabsLayout() {
         name="bookmarks"
         options={{
           title: 'Bookmarks',
-          tabBarLabel: 'सहेजे गए (Saved)',
+          tabBarLabel: bookmarksLabel,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'bookmark' : 'bookmark-outline'}
@@ -77,17 +85,23 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="profile"
         options={{
-          title: 'Settings',
-          tabBarLabel: 'सेटिंग्स (Settings)',
+          title: 'Profile',
+          tabBarLabel: profileLabel,
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? 'settings' : 'settings-outline'}
+              name={focused ? 'person' : 'person-outline'}
               size={22}
               color={color as string}
             />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

@@ -21,21 +21,44 @@ import { PrayerCard } from '../../src/components';
 export default function DeityDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { isDarkMode } = useApp();
+  const { isDarkMode, readingLanguage } = useApp();
   const theme = isDarkMode ? Colors.dark : Colors.light;
+
+  const isEnglishOnly = readingLanguage === 'english';
+  const isHindiOnly = readingLanguage === 'hindi';
 
   const deity = getDeityById(id || 'hanuman');
   const allDeityPrayers = useMemo(() => (id ? getPrayersByDeity(id) : []), [id]);
 
   const [selectedCategory, setSelectedCategory] = useState<PrayerCategory>('all');
 
-  const filterTabs: { id: PrayerCategory; label: string }[] = [
-    { id: 'all', label: 'सभी (All)' },
-    { id: 'chalisa', label: 'चालीसा' },
-    { id: 'aarti', label: 'आरती' },
-    { id: 'katha', label: 'व्रत कथा' },
-    { id: 'mantra', label: 'मंत्र' },
-  ];
+  const filterTabs: { id: PrayerCategory; label: string }[] = useMemo(() => {
+    if (isEnglishOnly) {
+      return [
+        { id: 'all', label: 'All' },
+        { id: 'chalisa', label: 'Chalisa' },
+        { id: 'aarti', label: 'Aarti' },
+        { id: 'katha', label: 'Vrat Katha' },
+        { id: 'mantra', label: 'Mantra' },
+      ];
+    }
+    if (isHindiOnly) {
+      return [
+        { id: 'all', label: 'सभी' },
+        { id: 'chalisa', label: 'चालीसा' },
+        { id: 'aarti', label: 'आरती' },
+        { id: 'katha', label: 'व्रत कथा' },
+        { id: 'mantra', label: 'मंत्र' },
+      ];
+    }
+    return [
+      { id: 'all', label: 'सभी (All)' },
+      { id: 'chalisa', label: 'चालीसा' },
+      { id: 'aarti', label: 'आरती' },
+      { id: 'katha', label: 'व्रत कथा' },
+      { id: 'mantra', label: 'मंत्र' },
+    ];
+  }, [isEnglishOnly, isHindiOnly]);
 
   const filteredPrayers = useMemo(() => {
     if (selectedCategory === 'all') return allDeityPrayers;
@@ -54,15 +77,38 @@ export default function DeityDetailScreen() {
       <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
         <View style={styles.errorContainer}>
           <Text style={[styles.errorText, { color: theme.textPrimary }]}>
-            देवी-देवता की जानकारी उपलब्ध नहीं है।
+            {isEnglishOnly
+              ? 'Deity information is not available.'
+              : 'देवी-देवता की जानकारी उपलब्ध नहीं है।'}
           </Text>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Text style={styles.backBtnText}>वापस जाएं</Text>
+            <Text style={styles.backBtnText}>
+              {isEnglishOnly ? 'Go Back' : 'वापस जाएं'}
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   }
+
+  const displayName = isEnglishOnly
+    ? deity.nameEnglish
+    : deity.nameHindi;
+
+  const displaySubtitle = isEnglishOnly
+    ? deity.title
+    : isHindiOnly
+    ? deity.title
+    : `${deity.nameEnglish} • ${deity.title}`;
+
+  const displayDay = isEnglishOnly
+    ? deity.associatedDayEnglish
+    : deity.associatedDayHindi;
+
+  const mantraLabel = isEnglishOnly ? 'Sacred Mantra:' : 'सिद्ध महामंत्र:';
+  const mantraText = isEnglishOnly
+    ? deity.mantraPreviewEnglish || deity.mantraPreviewHindi
+    : deity.mantraPreviewHindi;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
@@ -92,7 +138,7 @@ export default function DeityDetailScreen() {
 
             <View style={styles.dayPill}>
               <Ionicons name="calendar" size={12} color="#FFFFFF" />
-              <Text style={styles.dayPillText}>{deity.associatedDayHindi}</Text>
+              <Text style={styles.dayPillText}>{displayDay}</Text>
             </View>
           </View>
 
@@ -110,19 +156,17 @@ export default function DeityDetailScreen() {
               )}
             </View>
 
-            <Text style={styles.bannerNameHindi}>{deity.nameHindi}</Text>
-            <Text style={styles.bannerNameEnglish}>
-              {deity.nameEnglish} • {deity.title}
-            </Text>
+            <Text style={styles.bannerNameHindi}>{displayName}</Text>
+            <Text style={styles.bannerNameEnglish}>{displaySubtitle}</Text>
 
             <View style={styles.significanceBox}>
               <Text style={styles.significanceText}>{deity.significance}</Text>
             </View>
 
-            {deity.mantraPreviewHindi && (
+            {mantraText && (
               <View style={styles.bannerMantraCard}>
-                <Text style={styles.mantraCardLabel}>सिद्ध महामंत्र:</Text>
-                <Text style={styles.mantraCardText}>{deity.mantraPreviewHindi}</Text>
+                <Text style={styles.mantraCardLabel}>{mantraLabel}</Text>
+                <Text style={styles.mantraCardText}>{mantraText}</Text>
               </View>
             )}
           </View>

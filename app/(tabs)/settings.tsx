@@ -28,6 +28,7 @@ export default function SettingsScreen() {
     setSelectedReligion,
     readingLanguage,
     setReadingLanguage,
+    availableLanguages,
     fontSizeMultiplier,
     increaseFontSize,
     decreaseFontSize,
@@ -208,27 +209,20 @@ export default function SettingsScreen() {
             पठन भाषा • Reading Language
           </Text>
           <View style={[styles.card, { backgroundColor: theme.surfaceCard, borderColor: theme.border }]}>
-            {[
-              { id: 'hindi', label: 'देवनागरी हिन्दी', desc: 'प्रामाणिक संस्कृत एवं हिन्दी लिपि' },
-              { id: 'english', label: 'English Transliteration', desc: 'Roman text + English meaning' },
-              { id: 'both', label: 'दोनों (Both / द्वैभाषी)', desc: 'देवनागरी श्लोक + English Meaning' },
-            ].map((langItem, idx) => {
+            {availableLanguages.map((langItem, idx) => {
               const isSelected = readingLanguage === langItem.id;
               return (
                 <TouchableOpacity
                   key={langItem.id}
                   style={[
                     styles.optionRow,
-                    idx < 2 && { borderBottomColor: theme.border, borderBottomWidth: 1 },
+                    idx < availableLanguages.length - 1 && { borderBottomColor: theme.border, borderBottomWidth: 1 },
                   ]}
                   onPress={() => setReadingLanguage(langItem.id as ReadingLanguage)}
                 >
                   <View style={styles.optionInfo}>
                     <Text style={[styles.optionTitle, { color: theme.textPrimary }]}>
-                      {langItem.label}
-                    </Text>
-                    <Text style={[styles.optionDesc, { color: theme.textSecondary }]}>
-                      {langItem.desc}
+                      {langItem.nativeLabel} ({langItem.label})
                     </Text>
                   </View>
                   {isSelected && (

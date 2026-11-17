@@ -13,12 +13,20 @@ interface PrayerCardProps {
 }
 
 export const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, onPress }) => {
-  const { isDarkMode, isBookmarked, toggleBookmark } = useApp();
+  const { isDarkMode, isBookmarked, toggleBookmark, readingLanguage } = useApp();
   const theme = isDarkMode ? Colors.dark : Colors.light;
   const bookmarked = isBookmarked(prayer.id);
   const deity = getDeityById(prayer.deityId);
 
-  const categoryLabels: Record<string, { label: string; bg: string; text: string }> = {
+  const categoryLabelsEnglish: Record<string, { label: string; bg: string; text: string }> = {
+    chalisa: { label: 'Chalisa', bg: '#FFF3E0', text: '#E65100' },
+    aarti: { label: 'Aarti', bg: '#FCE4EC', text: '#C2185B' },
+    katha: { label: 'Vrat Katha', bg: '#E8F5E9', text: '#2E7D32' },
+    mantra: { label: 'Mantra', bg: '#EDE7F6', text: '#512DA8' },
+    stotra: { label: 'Stotra', bg: '#FFF8E1', text: '#F57F17' },
+  };
+
+  const categoryLabelsHindi: Record<string, { label: string; bg: string; text: string }> = {
     chalisa: { label: 'चालीसा', bg: '#FFF3E0', text: '#E65100' },
     aarti: { label: 'आरती', bg: '#FCE4EC', text: '#C2185B' },
     katha: { label: 'व्रत कथा', bg: '#E8F5E9', text: '#2E7D32' },
@@ -26,11 +34,36 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, onPress }) => {
     stotra: { label: 'स्तोत्र', bg: '#FFF8E1', text: '#F57F17' },
   };
 
-  const catStyle = categoryLabels[prayer.category] || {
+  const categoryMap = readingLanguage === 'english' ? categoryLabelsEnglish : categoryLabelsHindi;
+  const catStyle = categoryMap[prayer.category] || {
     label: prayer.category,
     bg: '#EEEEEE',
     text: '#444444',
   };
+
+  // Determine Titles strictly based on language
+  const isEnglishOnly = readingLanguage === 'english';
+  const isHindiOnly = readingLanguage === 'hindi';
+
+  const primaryTitle = isEnglishOnly
+    ? prayer.titleEnglish
+    : prayer.titleHindi;
+
+  const secondaryTitle = isEnglishOnly
+    ? prayer.subtitleEnglish
+    : isHindiOnly
+    ? prayer.subtitleHindi
+    : prayer.titleEnglish;
+
+  const deityDisplayName = deity
+    ? isEnglishOnly
+      ? deity.nameEnglish
+      : deity.nameHindi
+    : null;
+
+  const durationLabel = isEnglishOnly
+    ? `${prayer.durationMinutes} min`
+    : `${prayer.durationMinutes} मिनट`;
 
   return (
     <TouchableOpacity
@@ -47,11 +80,13 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, onPress }) => {
       <View style={styles.cardHeader}>
         <View style={styles.titleArea}>
           <Text style={[styles.titleHindi, { color: theme.textPrimary }]}>
-            {prayer.titleHindi}
+            {primaryTitle}
           </Text>
-          <Text style={[styles.titleEnglish, { color: theme.textSecondary }]}>
-            {prayer.titleEnglish}
-          </Text>
+          {secondaryTitle ? (
+            <Text style={[styles.titleEnglish, { color: theme.textSecondary }]}>
+              {secondaryTitle}
+            </Text>
+          ) : null}
         </View>
 
         <TouchableOpacity
@@ -92,7 +127,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, onPress }) => {
             <View style={styles.deityTag}>
               <Text style={styles.deityEmoji}>{deity.avatarIcon}</Text>
               <Text style={[styles.deityNameText, { color: theme.textSecondary }]}>
-                {deity.nameHindi}
+                {deityDisplayName}
               </Text>
             </View>
           )}
@@ -101,7 +136,7 @@ export const PrayerCard: React.FC<PrayerCardProps> = ({ prayer, onPress }) => {
         <View style={styles.metaInfo}>
           <Ionicons name="time-outline" size={14} color={theme.textMuted} />
           <Text style={[styles.durationText, { color: theme.textMuted }]}>
-            {prayer.durationMinutes} मिनट
+            {durationLabel}
           </Text>
           <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
         </View>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../src/theme/colors';
 import { Spacing } from '../src/theme/spacing';
 import { useApp } from '../src/context';
-import { getReligions } from '../src/data';
-import { ReligionId, ReadingLanguage } from '../src/types';
+import { getReligions, getLanguagesForReligion } from '../src/data';
+import { ReligionId, ReadingLanguage, ReligionLanguageOption } from '../src/types';
 
 export default function OnboardingScreen() {
   const router = useRouter();
@@ -33,6 +33,18 @@ export default function OnboardingScreen() {
 
   const [activeReligion, setActiveReligion] = useState<ReligionId>(selectedReligion || 'hinduism');
   const [activeLanguage, setActiveLanguage] = useState<ReadingLanguage>(readingLanguage || 'both');
+
+  const religionLanguages = useMemo(() => {
+    return getLanguagesForReligion(activeReligion);
+  }, [activeReligion]);
+
+  const handleSelectReligion = (religionId: ReligionId) => {
+    setActiveReligion(religionId);
+    const langs = getLanguagesForReligion(religionId);
+    if (!langs.some((l) => l.id === activeLanguage) && langs.length > 0) {
+      setActiveLanguage(langs[0].id);
+    }
+  };
 
   const handleStart = async () => {
     await setSelectedReligion(activeReligion);
@@ -99,7 +111,7 @@ export default function OnboardingScreen() {
                   activeOpacity={0.8}
                   onPress={() => {
                     if (r.isAvailable) {
-                      setActiveReligion(r.id);
+                      handleSelectReligion(r.id);
                     } else {
                       Alert.alert(
                         `${r.nameEnglish} - शीघ्र आ रहा है`,
@@ -157,27 +169,9 @@ export default function OnboardingScreen() {
           </View>
 
           <View style={styles.languageOptions}>
-            {[
-              {
-                id: 'hindi',
-                title: 'देवनागरी हिन्दी',
-                subtitle: 'पारंपरिक संस्कृत एवं हिन्दी लिपि',
-                badge: 'अ/आ',
-              },
-              {
-                id: 'english',
-                title: 'English Transliteration',
-                subtitle: 'Easy Roman chanting + English meaning',
-                badge: 'EN',
-              },
-              {
-                id: 'both',
-                title: 'दोनों (Both / द्वैभाषी)',
-                subtitle: 'देवनागरी चौपाइयां + Roman Meaning (Recommended)',
-                badge: 'A+अ',
-              },
-            ].map((item) => {
+            {religionLanguages.map((item: ReligionLanguageOption) => {
               const isSelected = activeLanguage === item.id;
+              const badge = item.id === 'both' ? 'A+अ' : item.id === 'english' ? 'EN' : item.id === 'hindi' ? 'अ' : 'ੴ';
               return (
                 <TouchableOpacity
                   key={item.id}
@@ -194,20 +188,20 @@ export default function OnboardingScreen() {
                     },
                   ]}
                   activeOpacity={0.8}
-                  onPress={() => setActiveLanguage(item.id as ReadingLanguage)}
+                  onPress={() => setActiveLanguage(item.id)}
                 >
                   <View style={[styles.langBadge, { backgroundColor: isSelected ? Colors.saffron : isDarkMode ? '#2D1E14' : '#F5EBE1' }]}>
                     <Text style={[styles.langBadgeText, { color: isSelected ? '#FFFFFF' : theme.textPrimary }]}>
-                      {item.badge}
+                      {badge}
                     </Text>
                   </View>
 
                   <View style={styles.langDetails}>
                     <Text style={[styles.langTitle, { color: theme.textPrimary }]}>
-                      {item.title}
+                      {item.nativeLabel}
                     </Text>
                     <Text style={[styles.langSubtitle, { color: theme.textSecondary }]}>
-                      {item.subtitle}
+                      {item.label}
                     </Text>
                   </View>
 

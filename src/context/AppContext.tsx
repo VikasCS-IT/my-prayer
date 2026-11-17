@@ -1,12 +1,14 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ReligionId, ReadingLanguage, ReadingTheme } from '../types';
+import { ReligionId, ReadingLanguage, ReadingTheme, ReligionLanguageOption } from '../types';
+import { getLanguagesForReligion } from '../data';
 
 interface AppContextType {
   selectedReligion: ReligionId;
   setSelectedReligion: (religion: ReligionId) => Promise<void>;
   readingLanguage: ReadingLanguage;
   setReadingLanguage: (lang: ReadingLanguage) => Promise<void>;
+  availableLanguages: ReligionLanguageOption[];
   fontSizeMultiplier: number;
   increaseFontSize: () => void;
   decreaseFontSize: () => void;
@@ -102,9 +104,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     loadSavedState();
   }, []);
 
+  // Dynamic supported languages for active religion
+  const availableLanguages = useMemo(() => {
+    return getLanguagesForReligion(selectedReligion);
+  }, [selectedReligion]);
+
   const setSelectedReligion = async (religion: ReligionId) => {
     setSelectedReligionState(religion);
     await AsyncStorage.setItem(STORAGE_KEYS.RELIGION, religion);
+
+    // If current language is not supported in the new religion, adapt gracefully
+    const nextLanguages = getLanguagesForReligion(religion);
+    const isStillValid = nextLanguages.some((l) => l.id === readingLanguage);
+    if (!isStillValid && nextLanguages.length > 0) {
+      const fallbackLang = nextLanguages[0].id;
+      setReadingLanguageState(fallbackLang);
+      await AsyncStorage.setItem(STORAGE_KEYS.LANGUAGE, fallbackLang);
+    }
   };
 
   const setReadingLanguage = async (lang: ReadingLanguage) => {
@@ -195,6 +211,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSelectedReligion,
         readingLanguage,
         setReadingLanguage,
+        availableLanguages,
         fontSizeMultiplier,
         increaseFontSize,
         decreaseFontSize,

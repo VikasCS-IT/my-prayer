@@ -19,8 +19,11 @@ import { PrayerCard } from '../../src/components';
 
 export default function BookmarksScreen() {
   const router = useRouter();
-  const { isDarkMode, bookmarks } = useApp();
+  const { isDarkMode, bookmarks, readingLanguage } = useApp();
   const theme = isDarkMode ? Colors.dark : Colors.light;
+
+  const isEnglishOnly = readingLanguage === 'english';
+  const isHindiOnly = readingLanguage === 'hindi';
 
   const savedPrayers = useMemo(() => {
     return bookmarks
@@ -44,10 +47,16 @@ export default function BookmarksScreen() {
       >
         <View style={styles.header}>
           <Text style={[styles.title, { color: theme.textPrimary }]}>
-            सहेजे गए पाठ • Bookmarks
+            {isEnglishOnly
+              ? 'Bookmarks'
+              : isHindiOnly
+              ? 'सहेजे गए पाठ'
+              : 'सहेजे गए पाठ • Bookmarks'}
           </Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            नित्य पाठ एवं दैनिक साधना के लिए आपके पसंदीदा संग्रह ({savedPrayers.length})
+            {isEnglishOnly
+              ? `Your saved collection for daily prayer and meditation (${savedPrayers.length})`
+              : `नित्य पाठ एवं दैनिक साधना के लिए आपके पसंदीदा संग्रह (${savedPrayers.length})`}
           </Text>
         </View>
 
@@ -57,17 +66,25 @@ export default function BookmarksScreen() {
               <Ionicons name="bookmark-outline" size={36} color={Colors.saffron} />
             </View>
             <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>
-              कोई सहेजा गया पाठ नहीं है
+              {isEnglishOnly ? 'No saved prayers yet' : 'कोई सहेजा गया पाठ नहीं है'}
             </Text>
             <Text style={[styles.emptyDesc, { color: theme.textSecondary }]}>
-              अपनी दैनिक पूजा के लिए किसी भी चालीसा, आरती या मंत्र के बुकमार्क आइकन पर टैप करें।
+              {isEnglishOnly
+                ? 'Tap the bookmark icon on any Chalisa, Aarti or Mantra to save it here.'
+                : 'अपनी दैनिक पूजा के लिए किसी भी चालीसा, आरती या मंत्र के बुकमार्क आइकन पर टैप करें।'}
             </Text>
 
             <TouchableOpacity
               style={styles.exploreBtn}
               onPress={() => router.push('/(tabs)')}
             >
-              <Text style={styles.exploreBtnText}>प्रार्थनाएं देखें • Explore Prayers</Text>
+              <Text style={styles.exploreBtnText}>
+                {isEnglishOnly
+                  ? 'Explore Prayers'
+                  : isHindiOnly
+                  ? 'प्रार्थनाएं देखें'
+                  : 'प्रार्थनाएं देखें • Explore Prayers'}
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (

@@ -12,8 +12,45 @@ interface FeaturedPrayerCardProps {
 }
 
 export const FeaturedPrayerCard: React.FC<FeaturedPrayerCardProps> = ({ prayer, onPress }) => {
-  const { isBookmarked, toggleBookmark } = useApp();
+  const { isBookmarked, toggleBookmark, readingLanguage } = useApp();
   const bookmarked = isBookmarked(prayer.id);
+
+  const isEnglishOnly = readingLanguage === 'english';
+  const isHindiOnly = readingLanguage === 'hindi';
+
+  const badgeText = isEnglishOnly
+    ? '✨ Featured Daily Prayer'
+    : isHindiOnly
+    ? '✨ दैनिक प्रमुख पाठ'
+    : '✨ दैनिक प्रमुख पाठ • Featured Prayer';
+
+  const primaryTitle = isEnglishOnly
+    ? prayer.titleEnglish
+    : prayer.titleHindi;
+
+  const secondaryTitle = isEnglishOnly
+    ? prayer.subtitleEnglish
+    : isHindiOnly
+    ? prayer.subtitleHindi
+    : prayer.titleEnglish;
+
+  const quoteText = isEnglishOnly
+    ? (prayer.verses[0]?.englishTransliteration || prayer.verses[0]?.englishMeaning || '')
+    : (prayer.verses[0]?.hindi?.split('\n')[0] || '');
+
+  const metaDuration = isEnglishOnly
+    ? `${prayer.durationMinutes} Mins`
+    : isHindiOnly
+    ? `${prayer.durationMinutes} मिनट`
+    : `${prayer.durationMinutes} मिनट (Mins)`;
+
+  const metaVerses = isEnglishOnly
+    ? `${prayer.verses.length} Verses`
+    : isHindiOnly
+    ? `${prayer.verses.length} छंद`
+    : `${prayer.verses.length} छंद/Verse`;
+
+  const actionText = isEnglishOnly ? 'Read & Listen' : 'पढ़ें एवं सुनें';
 
   return (
     <TouchableOpacity
@@ -25,7 +62,7 @@ export const FeaturedPrayerCard: React.FC<FeaturedPrayerCardProps> = ({ prayer, 
       <View style={styles.content}>
         <View style={styles.topBadgeRow}>
           <View style={styles.featuredBadge}>
-            <Text style={styles.featuredBadgeText}>✨ दैनिक प्रमुख पाठ • Featured Prayer</Text>
+            <Text style={styles.featuredBadgeText}>{badgeText}</Text>
           </View>
 
           <TouchableOpacity
@@ -44,14 +81,16 @@ export const FeaturedPrayerCard: React.FC<FeaturedPrayerCardProps> = ({ prayer, 
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.titleHindi}>{prayer.titleHindi}</Text>
-        <Text style={styles.titleEnglish}>{prayer.titleEnglish}</Text>
+        <Text style={styles.titleHindi}>{primaryTitle}</Text>
+        {secondaryTitle ? (
+          <Text style={styles.titleEnglish}>{secondaryTitle}</Text>
+        ) : null}
 
-        {prayer.verses.length > 0 && (
+        {quoteText.length > 0 && (
           <View style={styles.verseQuoteBox}>
             <Text style={styles.quoteMark}>“</Text>
             <Text style={styles.verseQuoteText} numberOfLines={2}>
-              {prayer.verses[0]?.hindi.split('\n')[0]}
+              {quoteText}
             </Text>
           </View>
         )}
@@ -59,14 +98,14 @@ export const FeaturedPrayerCard: React.FC<FeaturedPrayerCardProps> = ({ prayer, 
         <View style={styles.footerRow}>
           <View style={styles.metaRow}>
             <Ionicons name="time-outline" size={15} color="#FFE0B2" />
-            <Text style={styles.metaText}>{prayer.durationMinutes} मिनट (Mins)</Text>
+            <Text style={styles.metaText}>{metaDuration}</Text>
             <Text style={styles.bullet}>•</Text>
             <Ionicons name="book-outline" size={15} color="#FFE0B2" />
-            <Text style={styles.metaText}>{prayer.verses.length} छंद/Verse</Text>
+            <Text style={styles.metaText}>{metaVerses}</Text>
           </View>
 
           <View style={styles.readActionBtn}>
-            <Text style={styles.readActionText}>पढ़ें एवं सुनें</Text>
+            <Text style={styles.readActionText}>{actionText}</Text>
             <Ionicons name="arrow-forward" size={14} color={Colors.maroon} />
           </View>
         </View>

@@ -19,7 +19,11 @@ export const DeityAvatarList: React.FC<DeityAvatarListProps> = ({ deities, onSel
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>
-          प्रमुख देवी-देवता • Popular Deities
+          {readingLanguage === 'english'
+            ? 'Popular Deities'
+            : readingLanguage === 'hindi'
+            ? 'प्रमुख देवी-देवता'
+            : 'प्रमुख देवी-देवता • Popular Deities'}
         </Text>
       </View>
 

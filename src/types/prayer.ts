@@ -1,6 +1,12 @@
 export type ReligionId = 'hinduism' | 'sikhism' | 'islam' | 'christianity' | 'jainism' | 'buddhism';
 
-export type ReadingLanguage = 'hindi' | 'english' | 'both';
+export type ReadingLanguage = 'hindi' | 'english' | 'both' | 'punjabi' | 'urdu' | 'sanskrit';
+
+export interface ReligionLanguageOption {
+  id: ReadingLanguage;
+  label: string;
+  nativeLabel: string;
+}
 
 export type ReadingTheme = 'cream' | 'sepia' | 'dark' | 'light';
 
@@ -15,6 +21,7 @@ export interface Religion {
   isAvailable: boolean;
   comingSoon?: boolean;
   accentColor: string;
+  supportedLanguages?: ReligionLanguageOption[];
   categories: {
     id: string;
     label: string;

@@ -261,21 +261,48 @@ export default function PrayerReaderScreen() {
           {deity && (
             <View style={styles.deityPill}>
               <Text style={styles.deityPillEmoji}>{deity.avatarIcon || '🕉️'}</Text>
-              <Text style={styles.deityPillText}>{deity.nameHindi}</Text>
+              <Text style={styles.deityPillText}>
+                {localLang === 'english' ? deity.nameEnglish : deity.nameHindi}
+              </Text>
             </View>
           )}
 
-          <Text style={[styles.mainPrayerTitle, { color: themeColors.text }]}>
-            {prayer.titleHindi}
-          </Text>
-          <Text style={[styles.subPrayerTitle, { color: themeColors.textSecondary }]}>
-            {prayer.titleEnglish}
-          </Text>
-
-          {prayer.subtitleHindi && (
-            <Text style={[styles.subtitleHindi, { color: Colors.saffronDark }]}>
-              ॥ {prayer.subtitleHindi} ॥
-            </Text>
+          {localLang === 'english' ? (
+            <>
+              <Text style={[styles.mainPrayerTitle, { color: themeColors.text }]}>
+                {prayer.titleEnglish}
+              </Text>
+              {prayer.subtitleEnglish ? (
+                <Text style={[styles.subtitleHindi, { color: Colors.saffronDark }]}>
+                  {prayer.subtitleEnglish}
+                </Text>
+              ) : null}
+            </>
+          ) : localLang === 'hindi' ? (
+            <>
+              <Text style={[styles.mainPrayerTitle, { color: themeColors.text }]}>
+                {prayer.titleHindi}
+              </Text>
+              {prayer.subtitleHindi ? (
+                <Text style={[styles.subtitleHindi, { color: Colors.saffronDark }]}>
+                  ॥ {prayer.subtitleHindi} ॥
+                </Text>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <Text style={[styles.mainPrayerTitle, { color: themeColors.text }]}>
+                {prayer.titleHindi}
+              </Text>
+              <Text style={[styles.subPrayerTitle, { color: themeColors.textSecondary }]}>
+                {prayer.titleEnglish}
+              </Text>
+              {prayer.subtitleHindi && (
+                <Text style={[styles.subtitleHindi, { color: Colors.saffronDark }]}>
+                  ॥ {prayer.subtitleHindi} ॥
+                </Text>
+              )}
+            </>
           )}
 
           {prayer.significance && (
@@ -303,6 +330,29 @@ export default function PrayerReaderScreen() {
             const isChorus = verse.type === 'chorus';
             const isKatha = verse.type === 'paragraph';
             const isMantra = verse.type === 'mantra';
+
+            const badgeText =
+              localLang === 'english'
+                ? verse.headingEnglish ||
+                  (isDoha
+                    ? 'Doha'
+                    : isChaupai
+                    ? 'Chaupai'
+                    : isChorus
+                    ? 'Chorus'
+                    : isMantra
+                    ? 'Sacred Mantra'
+                    : 'Verse')
+                : verse.headingHindi ||
+                  (isDoha
+                    ? '॥ दोहा ॥'
+                    : isChaupai
+                    ? '॥ चौपाई ॥'
+                    : isChorus
+                    ? '॥ स्थायी / Chorus ॥'
+                    : isMantra
+                    ? '॥ महामंत्र ॥'
+                    : '॥ पद ॥');
 
             return (
               <View
@@ -333,7 +383,7 @@ export default function PrayerReaderScreen() {
                 ]}
               >
                 {/* Heading / Stanza Type Badge */}
-                {(verse.headingHindi || isDoha || isChorus || isMantra) && (
+                {(verse.headingHindi || verse.headingEnglish || isDoha || isChorus || isMantra) && (
                   <View style={styles.verseHeaderRow}>
                     <View
                       style={[
@@ -353,16 +403,7 @@ export default function PrayerReaderScreen() {
                           },
                         ]}
                       >
-                        {verse.headingHindi ||
-                          (isDoha
-                            ? '॥ दोहा ॥'
-                            : isChaupai
-                            ? '॥ चौपाई ॥'
-                            : isChorus
-                            ? '॥ स्थायी / Chorus ॥'
-                            : isMantra
-                            ? '॥ महामंत्र ॥'
-                            : '॥ पद ॥')}
+                        {badgeText}
                       </Text>
                     </View>
 
@@ -374,7 +415,7 @@ export default function PrayerReaderScreen() {
                   </View>
                 )}
 
-                {/* 1. Hindi Devanagari Script */}
+                {/* 1. Hindi Devanagari Script (Shown only for Hindi or Both) */}
                 {(localLang === 'hindi' || localLang === 'both') && (
                   <Text
                     style={[
@@ -391,7 +432,7 @@ export default function PrayerReaderScreen() {
                   </Text>
                 )}
 
-                {/* 2. English Transliteration */}
+                {/* 2. English Transliteration (Shown only for English or Both) */}
                 {(localLang === 'english' || localLang === 'both') && verse.englishTransliteration && (
                   <Text
                     style={[
@@ -408,8 +449,8 @@ export default function PrayerReaderScreen() {
                   </Text>
                 )}
 
-                {/* 3. English Meaning / भावार्थ */}
-                {verse.englishMeaning && (
+                {/* 3. English Meaning / भावार्थ (Shown only for English or Both) */}
+                {(localLang === 'english' || localLang === 'both') && verse.englishMeaning && (
                   <View
                     style={[
                       styles.meaningBox,
@@ -425,15 +466,15 @@ export default function PrayerReaderScreen() {
                         { color: isDoha ? Colors.saffronDark : Colors.goldDark },
                       ]}
                     >
-                      अर्थ / Meaning:
+                      {localLang === 'english' ? 'Meaning:' : 'भावार्थ / Meaning:'}
                     </Text>
                     <Text
                       style={[
                         styles.meaningText,
                         {
-                          color: themeColors.meaningText,
-                          fontSize: baseMeaningSize,
-                          lineHeight: baseMeaningSize * 1.45,
+                          color: themeColors.textSecondary,
+                          fontSize: baseEnglishSize - 1,
+                          lineHeight: (baseEnglishSize - 1) * 1.5,
                         },
                       ]}
                     >
@@ -448,17 +489,27 @@ export default function PrayerReaderScreen() {
 
         {/* Completion Closing Benediction */}
         <View style={styles.benedictionBox}>
-          <Text style={[styles.benedictionOm, { color: Colors.saffron }]}>॥ इति शुभम् ॥</Text>
+          <Text style={[styles.benedictionOm, { color: Colors.saffron }]}>
+            {localLang === 'english' ? '✦ Sacred Prayer Complete ✦' : '॥ इति शुभम् ॥'}
+          </Text>
           <Text style={[styles.benedictionText, { color: themeColors.textSecondary }]}>
-            भगवान आपके जीवन में सुख, शांति एवं आध्यात्मिक तेज का संचार करें।
+            {localLang === 'english'
+              ? 'May the divine presence bestow peace, strength, and auspicious blessings upon you.'
+              : 'भगवान आपके जीवन में सुख, शांति एवं आध्यात्मिक तेज का संचार करें।'}
           </Text>
         </View>
       </ScrollView>
 
       {/* Sticky Bottom Mini Audio Player */}
       <MiniAudioPlayer
-        title={prayer.titleHindi}
-        subtitle={`${prayer.titleEnglish} • ${prayer.durationMinutes} मिनट`}
+        title={localLang === 'english' ? prayer.titleEnglish : prayer.titleHindi}
+        subtitle={
+          localLang === 'english'
+            ? `${prayer.durationMinutes} min`
+            : localLang === 'hindi'
+            ? `${prayer.durationMinutes} मिनट`
+            : `${prayer.titleEnglish} • ${prayer.durationMinutes} मिनट`
+        }
         durationSeconds={prayer.audioDurationSeconds || prayer.durationMinutes * 60}
         audioUrl={prayer.audioUrl}
       />

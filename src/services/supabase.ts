@@ -7,6 +7,7 @@ import {
   DbPrayer,
   DbVerse,
   DbAppConfig,
+  DbProfile,
   Deity,
   PrayerItem,
   VerseItem,
@@ -39,6 +40,7 @@ export const STORAGE_BUCKETS = {
   DEITY_IMAGES: 'deity-images',
   PRAYER_AUDIO: 'prayer-audio',
   APP_ASSETS: 'app-assets',
+  PROFILE_PHOTOS: 'profile-photos',
 };
 
 // Storage Cache Keys
@@ -49,6 +51,7 @@ const CACHE_KEYS = {
   PRAYERS_PREFIX: '@myprayer_cache_prayers_',
   PRAYER_DETAIL_PREFIX: '@myprayer_cache_prayer_detail_',
   APP_CONFIG: '@myprayer_cache_app_config',
+  USER_PROFILE: '@myprayer_cache_user_profile',
 };
 
 /* =========================================================================
@@ -555,3 +558,206 @@ export async function updateAppConfig(key: string, value: string): Promise<void>
   );
   if (error) throw error;
 }
+
+/* =========================================================================
+   USER & ADMIN PROFILE & AUTHENTICATION SERVICES
+   ========================================================================= */
+
+/**
+ * Normalizes input identifier (email or mobile) into an auth-compliant email string
+ */
+export function normalizeAuthIdentifier(identifier: string): string {
+  const clean = identifier.trim().toLowerCase();
+  if (clean.includes('@')) {
+    return clean;
+  }
+  const digitsOnly = clean.replace(/[^0-9]/g, '');
+  return `${digitsOnly || 'user'}@myprayer.app`;
+}
+
+/**
+ * Fetch profile for a specific user ID
+ */
+export async function fetchUserProfile(userId: string): Promise<DbProfile | null> {
+  try {
+    if (isSupabaseConfigured) {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (!error && data) {
+        await AsyncStorage.setItem(CACHE_KEYS.USER_PROFILE, JSON.stringify(data));
+        return data as DbProfile;
+      }
+    }
+  } catch (e) {
+    console.warn('Fetch profile notice:', e);
+  }
+
+  // Fallback to AsyncStorage Cache
+  try {
+    const cached = await AsyncStorage.getItem(CACHE_KEYS.USER_PROFILE);
+    if (cached) {
+      return JSON.parse(cached);
+    }
+  } catch {}
+
+  return null;
+}
+
+/**
+ * Sign up a new user and create their profile in `profiles` table
+ */
+export async function signUpUserProfile(params: {
+  name: string;
+  mobile: string;
+  password: string;
+  email?: string;
+  age?: number;
+  gender?: 'Male' | 'Female' | 'Other';
+  photoUri?: string;
+}): Promise<{ user: any; profile: DbProfile }> {
+  const authEmail = params.email?.trim() || normalizeAuthIdentifier(params.mobile);
+
+  // 1. Supabase Auth Sign Up
+  const { data: authData, error: authError } = await supabase.auth.signUp({
+    email: authEmail,
+    password: params.password,
+    options: {
+      data: {
+        name: params.name,
+        mobile: params.mobile,
+      },
+    },
+  });
+
+  if (authError) throw authError;
+  if (!authData.user) throw new Error('उपयोगकर्ता पंजीकरण विफल (User creation failed)');
+
+  // 2. Upload photo if selected
+  let uploadedPhotoUrl: string | null = null;
+  if (params.photoUri) {
+    try {
+      const fileName = `profile_${authData.user.id}_${Date.now()}.jpg`;
+      uploadedPhotoUrl = await uploadToStorage(
+        STORAGE_BUCKETS.PROFILE_PHOTOS,
+        params.photoUri,
+        fileName,
+        'image/jpeg'
+      );
+    } catch (photoErr) {
+      console.warn('Profile photo upload notice:', photoErr);
+    }
+  }
+
+  // 3. Create Profile in public.profiles table
+  const profileRecord: DbProfile = {
+    id: authData.user.id,
+    name: params.name,
+    mobile: params.mobile,
+    age: params.age || null,
+    gender: params.gender || 'Male',
+    photo_url: uploadedPhotoUrl,
+    role: 'user',
+  };
+
+  const { data: profileData, error: profileError } = await supabase
+    .from('profiles')
+    .upsert(profileRecord)
+    .select()
+    .single();
+
+  const finalProfile = profileError ? profileRecord : (profileData as DbProfile);
+  await AsyncStorage.setItem(CACHE_KEYS.USER_PROFILE, JSON.stringify(finalProfile));
+
+  return {
+    user: authData.user,
+    profile: finalProfile,
+  };
+}
+
+/**
+ * Sign in user or admin by email or mobile number
+ */
+export async function signInUserProfile(params: {
+  identifier: string;
+  password: string;
+}): Promise<{ user: any; profile: DbProfile }> {
+  const authEmail = normalizeAuthIdentifier(params.identifier);
+
+  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    email: authEmail,
+    password: params.password,
+  });
+
+  if (authError) throw authError;
+  if (!authData.user) throw new Error('लॉगिन विफल (Sign in failed)');
+
+  // Fetch or create profile
+  let profile = await fetchUserProfile(authData.user.id);
+
+  // If user profile is not found (e.g., initial Admin created in Supabase Auth directly)
+  if (!profile) {
+    const isAdmin =
+      authEmail.includes('admin') ||
+      authEmail === 'prayer@myprayer.com' ||
+      authData.user.email === 'prayer@myprayer.com';
+
+    const defaultProfile: DbProfile = {
+      id: authData.user.id,
+      name: isAdmin ? 'मुख्य व्यवस्थापक (Admin)' : 'साधक (Seeker)',
+      mobile: authData.user.user_metadata?.mobile || params.identifier,
+      age: 30,
+      gender: 'Male',
+      photo_url: null,
+      role: isAdmin ? 'admin' : 'user',
+    };
+
+    try {
+      const { data: inserted } = await supabase
+        .from('profiles')
+        .upsert(defaultProfile)
+        .select()
+        .single();
+      profile = inserted ? (inserted as DbProfile) : defaultProfile;
+    } catch {
+      profile = defaultProfile;
+    }
+  }
+
+  await AsyncStorage.setItem(CACHE_KEYS.USER_PROFILE, JSON.stringify(profile));
+  return {
+    user: authData.user,
+    profile,
+  };
+}
+
+/**
+ * Update an existing user profile
+ */
+export async function updateUserProfile(
+  userId: string,
+  updates: Partial<DbProfile>
+): Promise<DbProfile> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', userId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  await AsyncStorage.setItem(CACHE_KEYS.USER_PROFILE, JSON.stringify(data));
+  return data as DbProfile;
+}
+
+/**
+ * Sign out current user
+ */
+export async function signOutUserProfile(): Promise<void> {
+  await supabase.auth.signOut();
+  await AsyncStorage.removeItem(CACHE_KEYS.USER_PROFILE);
+}
+

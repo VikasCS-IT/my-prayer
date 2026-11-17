@@ -19,8 +19,11 @@ import { SearchBar } from '../../src/components';
 
 export default function DeitiesScreen() {
   const router = useRouter();
-  const { isDarkMode, selectedReligion } = useApp();
+  const { isDarkMode, selectedReligion, readingLanguage } = useApp();
   const theme = isDarkMode ? Colors.dark : Colors.light;
+
+  const isEnglishOnly = readingLanguage === 'english';
+  const isHindiOnly = readingLanguage === 'hindi';
 
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -55,17 +58,27 @@ export default function DeitiesScreen() {
       >
         <View style={styles.header}>
           <Text style={[styles.title, { color: theme.textPrimary }]}>
-            सनातन देवी-देवता • Sacred Deities
+            {isEnglishOnly
+              ? 'Sacred Deities'
+              : isHindiOnly
+              ? 'सनातन देवी-देवता'
+              : 'सनातन देवी-देवता • Sacred Deities'}
           </Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            देव स्वरूप, स्तुति, पूजन दिवस एवं दिव्य मंत्र
+            {isEnglishOnly
+              ? 'Divine forms, sacred mantras and eternal blessings'
+              : 'देव स्वरूप, स्तुति, पूजन दिवस एवं दिव्य मंत्र'}
           </Text>
         </View>
 
         <SearchBar
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="देवी-देवता या पूजन दिवस खोजें (उदा. शिव, मंगलवार)..."
+          placeholder={
+            isEnglishOnly
+              ? 'Search deities or sacred days (e.g. Shiva, Tuesday)...'
+              : 'देवी-देवता या पूजन दिवस खोजें (उदा. शिव, मंगलवार)...'
+          }
         />
 
         <View style={styles.listContainer}>
@@ -99,15 +112,27 @@ export default function DeitiesScreen() {
 
                   <View style={styles.nameSection}>
                     <Text style={[styles.nameHindi, { color: theme.textPrimary }]}>
-                      {deity.nameHindi}
+                      {isEnglishOnly ? deity.nameEnglish : deity.nameHindi}
                     </Text>
-                    <Text style={[styles.nameEnglish, { color: theme.textSecondary }]}>
-                      {deity.nameEnglish} • {deity.title}
-                    </Text>
+                    {isEnglishOnly ? (
+                      <Text style={[styles.nameEnglish, { color: theme.textSecondary }]}>
+                        {deity.title}
+                      </Text>
+                    ) : isHindiOnly ? (
+                      <Text style={[styles.nameEnglish, { color: theme.textSecondary }]}>
+                        {deity.title}
+                      </Text>
+                    ) : (
+                      <Text style={[styles.nameEnglish, { color: theme.textSecondary }]}>
+                        {deity.nameEnglish} • {deity.title}
+                      </Text>
+                    )}
 
                     <View style={styles.dayBadge}>
                       <Ionicons name="calendar-outline" size={12} color={Colors.saffronDark} />
-                      <Text style={styles.dayText}>{deity.associatedDayHindi}</Text>
+                      <Text style={styles.dayText}>
+                        {isEnglishOnly ? deity.associatedDayEnglish : deity.associatedDayHindi}
+                      </Text>
                     </View>
                   </View>
                 </View>
@@ -119,7 +144,7 @@ export default function DeitiesScreen() {
                   {deity.significance}
                 </Text>
 
-                {deity.mantraPreviewHindi && (
+                {(deity.mantraPreviewHindi || deity.mantraPreviewEnglish) && (
                   <View
                     style={[
                       styles.mantraBox,
@@ -129,20 +154,28 @@ export default function DeitiesScreen() {
                       },
                     ]}
                   >
-                    <Text style={styles.mantraLabel}>सिद्ध मंत्र:</Text>
+                    <Text style={styles.mantraLabel}>
+                      {isEnglishOnly ? 'Sacred Mantra:' : 'सिद्ध मंत्र:'}
+                    </Text>
                     <Text style={[styles.mantraHindi, { color: theme.accent }]}>
-                      {deity.mantraPreviewHindi}
+                      {isEnglishOnly
+                        ? deity.mantraPreviewEnglish || deity.mantraPreviewHindi
+                        : deity.mantraPreviewHindi}
                     </Text>
                   </View>
                 )}
 
                 <View style={styles.bottomRow}>
                   <Text style={[styles.prayerCount, { color: theme.textMuted }]}>
-                    {prayers.length} चालीसा / आरती / पाठ उपलब्ध
+                    {isEnglishOnly
+                      ? `${prayers.length} Prayers Available`
+                      : isHindiOnly
+                      ? `${prayers.length} चालीसा / आरती / पाठ उपलब्ध`
+                      : `${prayers.length} चालीसा / आरती / पाठ उपलब्ध`}
                   </Text>
                   <View style={styles.viewMoreRow}>
                     <Text style={[styles.viewMoreText, { color: theme.accent }]}>
-                      पाठ सूची देखें
+                      {isEnglishOnly ? 'View Prayers' : 'पाठ सूची देखें'}
                     </Text>
                     <Ionicons name="arrow-forward" size={14} color={theme.accent} />
                   </View>

@@ -9,6 +9,12 @@ export const RELIGIONS: Religion[] = [
     tagline: 'Chalisas, Aartis, Vrat Kathas, and Sacred Mantras',
     isAvailable: true,
     accentColor: '#FF6F00',
+    supportedLanguages: [
+      { id: 'both', label: 'Bilingual (Hindi + English)', nativeLabel: 'द्वैभाषी' },
+      { id: 'hindi', label: 'Hindi', nativeLabel: 'हिन्दी' },
+      { id: 'english', label: 'English', nativeLabel: 'English' },
+      { id: 'sanskrit', label: 'Sanskrit', nativeLabel: 'संस्कृतम्' },
+    ],
     categories: [
       { id: 'all', label: 'All', description: 'Everything' },
       { id: 'chalisa', label: 'Chalisa', description: '40 sacred verses' },
@@ -26,6 +32,12 @@ export const RELIGIONS: Religion[] = [
     isAvailable: false,
     comingSoon: true,
     accentColor: '#F57C00',
+    supportedLanguages: [
+      { id: 'both', label: 'Bilingual (Gurmukhi + English)', nativeLabel: 'ਦੋਭਾਸ਼ੀ' },
+      { id: 'punjabi', label: 'Gurmukhi / Punjabi', nativeLabel: 'ਗੁਰਮੁਖੀ' },
+      { id: 'english', label: 'English', nativeLabel: 'English' },
+      { id: 'hindi', label: 'Hindi', nativeLabel: 'हिन्दी' },
+    ],
     categories: [
       { id: 'nitnem', label: 'Nitnem', description: 'Daily Banis' },
       { id: 'hukamnama', label: 'Hukamnama', description: 'Daily Golden Order' },
@@ -41,6 +53,12 @@ export const RELIGIONS: Religion[] = [
     isAvailable: false,
     comingSoon: true,
     accentColor: '#2E7D32',
+    supportedLanguages: [
+      { id: 'both', label: 'Bilingual (Urdu/Arabic + English)', nativeLabel: 'دو لسانی' },
+      { id: 'urdu', label: 'Urdu / Arabic', nativeLabel: 'اُردُو' },
+      { id: 'english', label: 'English', nativeLabel: 'English' },
+      { id: 'hindi', label: 'Hindi', nativeLabel: 'हिन्दी' },
+    ],
     categories: [
       { id: 'duas', label: 'Daily Duas', description: 'Supplications' },
       { id: 'surah', label: 'Surahs', description: 'Holy Quran recitations' },
@@ -56,6 +74,11 @@ export const RELIGIONS: Religion[] = [
     isAvailable: false,
     comingSoon: true,
     accentColor: '#1976D2',
+    supportedLanguages: [
+      { id: 'both', label: 'Bilingual (English + Hindi)', nativeLabel: 'Bilingual' },
+      { id: 'english', label: 'English', nativeLabel: 'English' },
+      { id: 'hindi', label: 'Hindi', nativeLabel: 'हिन्दी' },
+    ],
     categories: [
       { id: 'psalms', label: 'Psalms', description: 'Songs of Praise' },
       { id: 'rosary', label: 'Holy Rosary', description: 'Meditative prayer' },
@@ -71,6 +94,11 @@ export const RELIGIONS: Religion[] = [
     isAvailable: false,
     comingSoon: true,
     accentColor: '#C2185B',
+    supportedLanguages: [
+      { id: 'both', label: 'Bilingual (Hindi/Prakrit + English)', nativeLabel: 'द्वैभाषी' },
+      { id: 'hindi', label: 'Hindi / Prakrit', nativeLabel: 'हिन्दी / प्राकृत' },
+      { id: 'english', label: 'English', nativeLabel: 'English' },
+    ],
     categories: [
       { id: 'namokar', label: 'Namokar Mantra', description: 'Universal prayer' },
       { id: 'bhaktamar', label: 'Bhaktamar', description: 'Stotra of 48 verses' },
@@ -86,6 +114,11 @@ export const RELIGIONS: Religion[] = [
     isAvailable: false,
     comingSoon: true,
     accentColor: '#7B1FA2',
+    supportedLanguages: [
+      { id: 'both', label: 'Bilingual (English + Hindi)', nativeLabel: 'Bilingual' },
+      { id: 'english', label: 'English', nativeLabel: 'English' },
+      { id: 'hindi', label: 'Hindi / Pali', nativeLabel: 'हिन्दी / पाली' },
+    ],
     categories: [
       { id: 'sutras', label: 'Sutras', description: 'Discourses' },
       { id: 'mantras', label: 'Chants', description: 'Mindful recitation' },

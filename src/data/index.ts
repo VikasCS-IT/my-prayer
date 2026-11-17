@@ -1,5 +1,5 @@
 import { RELIGIONS, DEITIES, PRAYERS } from './hinduismData';
-import { Religion, Deity, PrayerItem, PrayerCategory, ReligionId } from '../types';
+import { Religion, Deity, PrayerItem, PrayerCategory, ReligionId, ReligionLanguageOption } from '../types';
 
 export * from './hinduismData';
 
@@ -9,6 +9,18 @@ export function getReligions(): Religion[] {
 
 export function getReligionById(id: ReligionId): Religion | undefined {
   return RELIGIONS.find((r) => r.id === id);
+}
+
+export function getLanguagesForReligion(id: ReligionId = 'hinduism'): ReligionLanguageOption[] {
+  const religion = getReligionById(id);
+  if (religion?.supportedLanguages && religion.supportedLanguages.length > 0) {
+    return religion.supportedLanguages;
+  }
+  return [
+    { id: 'both', label: 'Bilingual (Both)', nativeLabel: 'द्वैभाषी' },
+    { id: 'hindi', label: 'Hindi', nativeLabel: 'हिन्दी' },
+    { id: 'english', label: 'English', nativeLabel: 'English' },
+  ];
 }
 
 export function getDeities(religionId: ReligionId = 'hinduism'): Deity[] {

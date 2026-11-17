@@ -9,7 +9,7 @@ interface HeaderGreetingProps {
 }
 
 export const HeaderGreeting: React.FC<HeaderGreetingProps> = ({ userName }) => {
-  const { isDarkMode } = useApp();
+  const { isDarkMode, readingLanguage } = useApp();
   const theme = isDarkMode ? Colors.dark : Colors.light;
 
   const now = new Date();
@@ -36,28 +36,112 @@ export const HeaderGreeting: React.FC<HeaderGreetingProps> = ({ userName }) => {
   }
 
   // Day of the week deity association
-  const dayHighlights: Record<number, { dayHindi: string; dayEnglish: string; deity: string; blessing: string }> = {
-    0: { dayHindi: 'रविवार', dayEnglish: 'Sunday', deity: 'सूर्य देव एवं भगवान विष्णु', blessing: 'तेज एवं ऊर्जा' },
-    1: { dayHindi: 'सोमवार', dayEnglish: 'Monday', deity: 'भगवान भोलेनाथ (शिव जी)', blessing: 'शांति एवं कल्याण' },
-    2: { dayHindi: 'मंगलवार', dayEnglish: 'Tuesday', deity: 'श्री हनुमान जी', blessing: 'बल, बुद्धि एवं भयमुक्ति' },
-    3: { dayHindi: 'बुधवार', dayEnglish: 'Wednesday', deity: 'श्री गणेश जी', blessing: 'विघ्नविनाशक कृपा एवं विवेक' },
-    4: { dayHindi: 'गुरुवार', dayEnglish: 'Thursday', deity: 'भगवान विष्णु एवं देवगुरु', blessing: 'ज्ञान, समृद्धि एवं सुख' },
-    5: { dayHindi: 'शुक्रवार', dayEnglish: 'Friday', deity: 'माँ लक्ष्मी एवं माँ दुर्गा', blessing: 'वैभव, सौभाग्य एवं शक्ति' },
-    6: { dayHindi: 'शनिवार', dayEnglish: 'Saturday', deity: 'श्री हनुमान जी एवं शनि देव', blessing: 'संकट निवारण एवं रक्षा' },
+  const dayHighlights: Record<
+    number,
+    {
+      dayHindi: string;
+      dayEnglish: string;
+      deityHindi: string;
+      deityEnglish: string;
+      blessingHindi: string;
+      blessingEnglish: string;
+    }
+  > = {
+    0: {
+      dayHindi: 'रविवार',
+      dayEnglish: 'Sunday',
+      deityHindi: 'सूर्य देव एवं भगवान विष्णु',
+      deityEnglish: 'Lord Surya & Lord Vishnu',
+      blessingHindi: 'तेज एवं ऊर्जा',
+      blessingEnglish: 'Vitality & Radiance',
+    },
+    1: {
+      dayHindi: 'सोमवार',
+      dayEnglish: 'Monday',
+      deityHindi: 'भगवान भोलेनाथ (शिव जी)',
+      deityEnglish: 'Lord Shiva',
+      blessingHindi: 'शांति एवं कल्याण',
+      blessingEnglish: 'Peace & Wellbeing',
+    },
+    2: {
+      dayHindi: 'मंगलवार',
+      dayEnglish: 'Tuesday',
+      deityHindi: 'श्री हनुमान जी',
+      deityEnglish: 'Lord Hanuman',
+      blessingHindi: 'बल, बुद्धि एवं भयमुक्ति',
+      blessingEnglish: 'Strength, Wisdom & Courage',
+    },
+    3: {
+      dayHindi: 'बुधवार',
+      dayEnglish: 'Wednesday',
+      deityHindi: 'श्री गणेश जी',
+      deityEnglish: 'Lord Ganesha',
+      blessingHindi: 'विघ्नविनाशक कृपा एवं विवेक',
+      blessingEnglish: 'Intellect & Removal of Obstacles',
+    },
+    4: {
+      dayHindi: 'गुरुवार',
+      dayEnglish: 'Thursday',
+      deityHindi: 'भगवान विष्णु एवं देवगुरु',
+      deityEnglish: 'Lord Vishnu & Brihaspati',
+      blessingHindi: 'ज्ञान, समृद्धि एवं सुख',
+      blessingEnglish: 'Knowledge, Prosperity & Joy',
+    },
+    5: {
+      dayHindi: 'शुक्रवार',
+      dayEnglish: 'Friday',
+      deityHindi: 'माँ लक्ष्मी एवं माँ दुर्गा',
+      deityEnglish: 'Goddess Lakshmi & Goddess Durga',
+      blessingHindi: 'वैभव, सौभाग्य एवं शक्ति',
+      blessingEnglish: 'Abundance, Fortune & Power',
+    },
+    6: {
+      dayHindi: 'शनिवार',
+      dayEnglish: 'Saturday',
+      deityHindi: 'श्री हनुमान जी एवं शनि देव',
+      deityEnglish: 'Lord Hanuman & Lord Shani',
+      blessingHindi: 'संकट निवारण एवं रक्षा',
+      blessingEnglish: 'Protection & Freedom from Afflictions',
+    },
   };
 
   const todayInfo = dayHighlights[dayIndex];
+  const isEnglishOnly = readingLanguage === 'english';
+  const isHindiOnly = readingLanguage === 'hindi';
+
+  const greetingTitle = isEnglishOnly
+    ? `${timeIcon} ${greetingEnglish}${userName ? `, ${userName}` : ''}`
+    : `${timeIcon} ${greetingHindi}${userName ? `, ${userName}` : ''}`;
+
+  const greetingSubtitle = isEnglishOnly
+    ? `${todayInfo.dayEnglish} • Devotional Blessing`
+    : isHindiOnly
+    ? `${todayInfo.dayHindi} • दैनिक साधना`
+    : `${greetingEnglish} • ${todayInfo.dayEnglish}`;
+
+  const dayCardHeader = isEnglishOnly
+    ? `Today's Day (${todayInfo.dayEnglish})`
+    : isHindiOnly
+    ? `आज का दिन (${todayInfo.dayHindi})`
+    : `आज का दिन (${todayInfo.dayHindi} • ${todayInfo.dayEnglish})`;
+
+  const deityHighlight = isEnglishOnly
+    ? `Special Worship of ${todayInfo.deityEnglish}`
+    : `${todayInfo.deityHindi} की विशेष उपासना`;
+
+  const blessingLine = isEnglishOnly
+    ? `Blessing: ${todayInfo.blessingEnglish}`
+    : `आशीर्वाद: ${todayInfo.blessingHindi}`;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.surfaceCard, borderColor: theme.border }]}>
       <View style={styles.topRow}>
         <View style={styles.greetingContainer}>
           <Text style={[styles.greetingHindi, { color: theme.textPrimary }]}>
-            {timeIcon} {greetingHindi}
-            {userName ? `, ${userName}` : ''}
+            {greetingTitle}
           </Text>
           <Text style={[styles.greetingEnglish, { color: theme.textSecondary }]}>
-            {greetingEnglish} • {todayInfo.dayEnglish}
+            {greetingSubtitle}
           </Text>
         </View>
 
@@ -66,15 +150,23 @@ export const HeaderGreeting: React.FC<HeaderGreetingProps> = ({ userName }) => {
         </View>
       </View>
 
-      <View style={[styles.dayCard, { backgroundColor: isDarkMode ? '#2C1D13' : '#FFF8EE', borderColor: isDarkMode ? '#482F1E' : '#FFE2C4' }]}>
+      <View
+        style={[
+          styles.dayCard,
+          {
+            backgroundColor: isDarkMode ? '#2C1D13' : '#FFF8EE',
+            borderColor: isDarkMode ? '#482F1E' : '#FFE2C4',
+          },
+        ]}
+      >
         <View style={styles.dayHeader}>
-          <Text style={styles.dayPillText}>आज का दिन ({todayInfo.dayHindi})</Text>
+          <Text style={styles.dayPillText}>{dayCardHeader}</Text>
         </View>
         <Text style={[styles.deityHighlightText, { color: theme.accent }]}>
-          {todayInfo.deity} की विशेष उपासना
+          {deityHighlight}
         </Text>
         <Text style={[styles.blessingText, { color: theme.textSecondary }]}>
-          आशीर्वाद: {todayInfo.blessing}
+          {blessingLine}
         </Text>
       </View>
     </View>

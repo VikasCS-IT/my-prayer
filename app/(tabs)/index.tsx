@@ -32,8 +32,11 @@ import {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { isDarkMode, recentlyRead, selectedReligion } = useApp();
+  const { isDarkMode, recentlyRead, selectedReligion, readingLanguage } = useApp();
   const theme = isDarkMode ? Colors.dark : Colors.light;
+
+  const isEnglishOnly = readingLanguage === 'english';
+  const isHindiOnly = readingLanguage === 'hindi';
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<PrayerCategory>('all');
@@ -131,20 +134,32 @@ export default function HomeScreen() {
         <SearchBar
           value={searchQuery}
           onChangeText={setSearchQuery}
-          placeholder="खोजें: चालीसा, आरती, मंत्र या देवी-देवता..."
+          placeholder={
+            isEnglishOnly
+              ? 'Search: Chalisa, Aarti, Mantra, Deities...'
+              : isHindiOnly
+              ? 'खोजें: चालीसा, आरती, मंत्र या देवी-देवता...'
+              : 'खोजें / Search: चालीसा, आरती, मंत्र...'
+          }
         />
 
         {/* If searching, display search results */}
         {searchQuery.trim().length > 0 ? (
           <View style={styles.searchResultsContainer}>
             <Text style={[styles.sectionHeading, { color: theme.textPrimary }]}>
-              खोज परिणाम • Search Results ({filteredData.prayers.length + filteredData.deities.length})
+              {isEnglishOnly
+                ? `Search Results (${filteredData.prayers.length + filteredData.deities.length})`
+                : isHindiOnly
+                ? `खोज परिणाम (${filteredData.prayers.length + filteredData.deities.length})`
+                : `खोज परिणाम • Search Results (${filteredData.prayers.length + filteredData.deities.length})`}
             </Text>
 
             {filteredData.deities.length > 0 && (
               <View style={styles.searchSection}>
                 <Text style={[styles.subHeading, { color: theme.textSecondary }]}>
-                  देवी-देवता ({filteredData.deities.length})
+                  {isEnglishOnly
+                    ? `Deities (${filteredData.deities.length})`
+                    : `देवी-देवता (${filteredData.deities.length})`}
                 </Text>
                 <DeityAvatarList
                   deities={filteredData.deities}
@@ -155,12 +170,16 @@ export default function HomeScreen() {
 
             <View style={styles.searchSection}>
               <Text style={[styles.subHeading, { color: theme.textSecondary }]}>
-                प्रार्थना एवं स्तुति ({filteredData.prayers.length})
+                {isEnglishOnly
+                  ? `Prayers & Hymns (${filteredData.prayers.length})`
+                  : `प्रार्थना एवं स्तुति (${filteredData.prayers.length})`}
               </Text>
               {filteredData.prayers.length === 0 ? (
                 <View style={[styles.emptyBox, { borderColor: theme.border }]}>
                   <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                    कोई परिणाम नहीं मिला। कृपया दूसरा शब्द खोजें।
+                    {isEnglishOnly
+                      ? 'No results found. Please try another keyword.'
+                      : 'कोई परिणाम नहीं मिला। कृपया दूसरा शब्द खोजें।'}
                   </Text>
                 </View>
               ) : (
@@ -201,7 +220,11 @@ export default function HomeScreen() {
               <View style={styles.section}>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={[styles.sectionHeading, { color: theme.textPrimary }]}>
-                    हाल ही में पढ़े गए • Recently Read
+                    {isEnglishOnly
+                      ? 'Recently Read'
+                      : isHindiOnly
+                      ? 'हाल ही में पढ़े गए'
+                      : 'हाल ही में पढ़े गए • Recently Read'}
                   </Text>
                 </View>
                 {recentlyReadPrayers.slice(0, 2).map((prayer) => (
@@ -219,8 +242,14 @@ export default function HomeScreen() {
               <View style={styles.sectionHeaderRow}>
                 <Text style={[styles.sectionHeading, { color: theme.textPrimary }]}>
                   {selectedCategory === 'all'
-                    ? 'पावन चालीसा एवं आरतियां • Popular Prayers'
-                    : `संग्रह • Selected Collection (${filteredData.prayers.length})`}
+                    ? isEnglishOnly
+                      ? 'Popular Prayers & Chalisas'
+                      : isHindiOnly
+                      ? 'पावन चालीसा एवं आरतियां'
+                      : 'पावन चालीसा एवं आरतियां • Popular Prayers'
+                    : isEnglishOnly
+                    ? `Collection (${filteredData.prayers.length})`
+                    : `संग्रह (${filteredData.prayers.length})`}
                 </Text>
               </View>
 
