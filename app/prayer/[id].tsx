@@ -7,6 +7,7 @@ import {
   StatusBar,
   TouchableOpacity,
   Share,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -15,8 +16,9 @@ import { Colors } from '../../src/theme/colors';
 import { Spacing } from '../../src/theme/spacing';
 import { useApp } from '../../src/context';
 import { getPrayerById, getDeityById } from '../../src/data';
+import { fetchPrayerById } from '../../src/services/supabase';
 import { MiniAudioPlayer } from '../../src/components';
-import { ReadingLanguage, ReadingTheme, VerseItem } from '../../src/types';
+import { ReadingLanguage, ReadingTheme, VerseItem, PrayerItem } from '../../src/types';
 
 export default function PrayerReaderScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -35,8 +37,40 @@ export default function PrayerReaderScreen() {
     recordRecentlyRead,
   } = useApp();
 
-  const prayer = getPrayerById(id || 'hanuman-chalisa');
-  const deity = prayer ? getDeityById(prayer.deityId) : undefined;
+  const localPrayer = getPrayerById(id || 'hanuman-chalisa');
+  const localDeity = localPrayer ? getDeityById(localPrayer.deityId) : undefined;
+
+  const [prayer, setPrayer] = useState<PrayerItem | undefined>(localPrayer);
+  const [activeDeityImageUrl, setActiveDeityImageUrl] = useState<string | null>(
+    localDeity?.imageUrl || null
+  );
+
+  // Dynamic fetch from Supabase
+  useEffect(() => {
+    let isMounted = true;
+    async function loadDynamicPrayer() {
+      if (!id) return;
+      try {
+        const { prayer: remotePrayer, deityImageUrl } = await fetchPrayerById(id);
+        if (isMounted) {
+          if (remotePrayer) {
+            setPrayer(remotePrayer);
+          }
+          if (deityImageUrl) {
+            setActiveDeityImageUrl(deityImageUrl);
+          }
+        }
+      } catch (err) {
+        console.warn('Dynamic prayer load warning:', err);
+      }
+    }
+    loadDynamicPrayer();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  const deity = prayer ? getDeityById(prayer.deityId) : localDeity;
   const isBookmarked = prayer ? bookmarks.includes(prayer.id) : false;
 
   // Local display mode for reader
@@ -214,9 +248,19 @@ export default function PrayerReaderScreen() {
       >
         {/* Sacred Invocation Header */}
         <View style={styles.prayerTitleHeader}>
+          {activeDeityImageUrl ? (
+            <View style={styles.deityImageHeaderContainer}>
+              <Image
+                source={{ uri: activeDeityImageUrl }}
+                style={styles.deityHeaderImage}
+                resizeMode="cover"
+              />
+            </View>
+          ) : null}
+
           {deity && (
             <View style={styles.deityPill}>
-              <Text style={styles.deityPillEmoji}>{deity.avatarIcon}</Text>
+              <Text style={styles.deityPillEmoji}>{deity.avatarIcon || '🕉️'}</Text>
               <Text style={styles.deityPillText}>{deity.nameHindi}</Text>
             </View>
           )}
@@ -415,7 +459,8 @@ export default function PrayerReaderScreen() {
       <MiniAudioPlayer
         title={prayer.titleHindi}
         subtitle={`${prayer.titleEnglish} • ${prayer.durationMinutes} मिनट`}
-        durationSeconds={prayer.durationMinutes * 60}
+        durationSeconds={prayer.audioDurationSeconds || prayer.durationMinutes * 60}
+        audioUrl={prayer.audioUrl}
       />
     </SafeAreaView>
   );
@@ -477,6 +522,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.xl,
     paddingTop: Spacing.sm,
+  },
+  deityImageHeaderContainer: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 3,
+    borderColor: Colors.saffron,
+    overflow: 'hidden',
+    marginBottom: Spacing.md,
+    shadowColor: '#4A0E0E',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  deityHeaderImage: {
+    width: '100%',
+    height: '100%',
   },
   deityPill: {
     flexDirection: 'row',

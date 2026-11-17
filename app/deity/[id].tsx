@@ -6,6 +6,7 @@ import {
   ScrollView,
   StatusBar,
   TouchableOpacity,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -98,7 +99,15 @@ export default function DeityDetailScreen() {
           {/* Deity Identity */}
           <View style={styles.deityHeroContent}>
             <View style={styles.avatarLargeCircle}>
-              <Text style={styles.avatarLargeEmoji}>{deity.avatarIcon}</Text>
+              {deity.imageUrl ? (
+                <Image
+                  source={{ uri: deity.imageUrl }}
+                  style={{ width: 84, height: 84, borderRadius: 42 }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={styles.avatarLargeEmoji}>{deity.avatarIcon || '🕉️'}</Text>
+              )}
             </View>
 
             <Text style={styles.bannerNameHindi}>{deity.nameHindi}</Text>

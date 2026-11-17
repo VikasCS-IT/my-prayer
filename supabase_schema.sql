@@ -1,0 +1,113 @@
+-- =====================================================================
+-- My Prayer - Complete Supabase Database Schema & Storage Configuration
+-- =====================================================================
+
+-- 1. Religions Table
+CREATE TABLE IF NOT EXISTS public.religions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    slug TEXT UNIQUE NOT NULL,
+    name_en TEXT NOT NULL,
+    name_hi TEXT NOT NULL,
+    icon_url TEXT,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2. Deities Table
+CREATE TABLE IF NOT EXISTS public.deities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    religion_id UUID REFERENCES public.religions(id) ON DELETE CASCADE,
+    name_en TEXT NOT NULL,
+    name_hi TEXT NOT NULL,
+    image_url TEXT,
+    significance TEXT,
+    display_order INT DEFAULT 1,
+    is_popular BOOLEAN DEFAULT false,
+    color TEXT DEFAULT '#FF6F00',
+    associated_day_hi TEXT,
+    associated_day_en TEXT,
+    avatar_icon TEXT DEFAULT '🕉️',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 3. Prayers Table
+CREATE TABLE IF NOT EXISTS public.prayers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    deity_id UUID REFERENCES public.deities(id) ON DELETE CASCADE,
+    category TEXT NOT NULL CHECK (category IN ('chalisa', 'aarti', 'katha', 'mantra', 'stotra')),
+    title_en TEXT NOT NULL,
+    title_hi TEXT NOT NULL,
+    subtitle_hi TEXT,
+    subtitle_en TEXT,
+    audio_url TEXT,
+    duration_seconds INT DEFAULT 480,
+    is_featured BOOLEAN DEFAULT false,
+    significance TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. Verses Table
+CREATE TABLE IF NOT EXISTS public.verses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    prayer_id UUID REFERENCES public.prayers(id) ON DELETE CASCADE,
+    verse_number INT NOT NULL,
+    text_hi TEXT NOT NULL,
+    text_en TEXT,
+    meaning_en TEXT,
+    verse_type TEXT DEFAULT 'chaupai',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. App Metadata & Remote Config Table
+CREATE TABLE IF NOT EXISTS public.app_config (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    config_key TEXT UNIQUE NOT NULL,
+    config_value TEXT NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- =====================================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- =====================================================================
+
+-- Enable RLS
+ALTER TABLE public.religions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.deities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.prayers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.verses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.app_config ENABLE ROW LEVEL SECURITY;
+
+-- Public Read-Only Access (Everyone can read content offline and online)
+CREATE POLICY "Public Read Religions" ON public.religions FOR SELECT USING (true);
+CREATE POLICY "Public Read Deities" ON public.deities FOR SELECT USING (true);
+CREATE POLICY "Public Read Prayers" ON public.prayers FOR SELECT USING (true);
+CREATE POLICY "Public Read Verses" ON public.verses FOR SELECT USING (true);
+CREATE POLICY "Public Read App Config" ON public.app_config FOR SELECT USING (true);
+
+-- Authenticated Admin Full CRUD Access
+CREATE POLICY "Admin Full Religions" ON public.religions FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin Full Deities" ON public.deities FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin Full Prayers" ON public.prayers FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin Full Verses" ON public.verses FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admin Full App Config" ON public.app_config FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- =====================================================================
+-- SUPABASE STORAGE BUCKETS CONFIGURATION
+-- =====================================================================
+-- Run in Storage or SQL Editor:
+INSERT INTO storage.buckets (id, name, public) 
+VALUES 
+  ('deity-images', 'deity-images', true),
+  ('prayer-audio', 'prayer-audio', true),
+  ('app-assets', 'app-assets', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Public access to download images and audio
+CREATE POLICY "Public Access deity-images" ON storage.objects FOR SELECT USING (bucket_id = 'deity-images');
+CREATE POLICY "Public Access prayer-audio" ON storage.objects FOR SELECT USING (bucket_id = 'prayer-audio');
+CREATE POLICY "Public Access app-assets" ON storage.objects FOR SELECT USING (bucket_id = 'app-assets');
+
+-- Authenticated Admin upload access to storage buckets
+CREATE POLICY "Admin Upload deity-images" ON storage.objects FOR ALL TO authenticated USING (bucket_id = 'deity-images') WITH CHECK (bucket_id = 'deity-images');
+CREATE POLICY "Admin Upload prayer-audio" ON storage.objects FOR ALL TO authenticated USING (bucket_id = 'prayer-audio') WITH CHECK (bucket_id = 'prayer-audio');
+CREATE POLICY "Admin Upload app-assets" ON storage.objects FOR ALL TO authenticated USING (bucket_id = 'app-assets') WITH CHECK (bucket_id = 'app-assets');

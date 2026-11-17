@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   StatusBar,
   TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,6 +19,7 @@ import {
   getPrayerById,
   searchPrayersAndDeities,
 } from '../../src/data';
+import { fetchPopularDeities } from '../../src/services/supabase';
 import { PrayerCategory, PrayerItem, Deity } from '../../src/types';
 import {
   HeaderGreeting,
@@ -35,9 +37,34 @@ export default function HomeScreen() {
 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<PrayerCategory>('all');
+  const [refreshing, setRefreshing] = useState<boolean>(false);
 
-  const allDeities = useMemo(() => getDeities(selectedReligion), [selectedReligion]);
+  const localDeities = useMemo(() => getDeities(selectedReligion), [selectedReligion]);
   const allPrayers = useMemo(() => getPrayers(selectedReligion), [selectedReligion]);
+
+  // Dynamic Popular Deities state (with fallback to local deities)
+  const [popularDeities, setPopularDeities] = useState<Deity[]>(localDeities);
+
+  const loadPopularDeities = useCallback(async () => {
+    try {
+      const dynamicList = await fetchPopularDeities();
+      if (dynamicList && dynamicList.length > 0) {
+        setPopularDeities(dynamicList);
+      }
+    } catch (e) {
+      console.warn('Error loading dynamic deities:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPopularDeities();
+  }, [selectedReligion, loadPopularDeities]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadPopularDeities();
+    setRefreshing(false);
+  };
 
   // Featured Daily Prayer (Hanuman Chalisa or first prayer)
   const featuredPrayer = useMemo(() => {
@@ -57,9 +84,9 @@ export default function HomeScreen() {
 
     return {
       prayers,
-      deities: allDeities,
+      deities: popularDeities.length > 0 ? popularDeities : localDeities,
     };
-  }, [searchQuery, selectedCategory, selectedReligion, allPrayers, allDeities]);
+  }, [searchQuery, selectedCategory, selectedReligion, allPrayers, popularDeities, localDeities]);
 
   // Recently read prayers
   const recentlyReadPrayers = useMemo(() => {
@@ -88,6 +115,14 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.saffron}
+            colors={[Colors.saffron]}
+          />
+        }
       >
         {/* Dynamic Spiritual Greeting & Today's Deity Blessing */}
         <HeaderGreeting />
@@ -157,7 +192,7 @@ export default function HomeScreen() {
 
             {/* Popular Deities Horizontal Scroll */}
             <DeityAvatarList
-              deities={allDeities}
+              deities={popularDeities}
               onSelectDeity={handleSelectDeity}
             />
 

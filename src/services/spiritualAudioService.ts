@@ -143,6 +143,7 @@ export const webAudioSynthesizer = new WebSpiritualSynthesizer();
 
 export class SpiritualAudioPlayer {
   private player: any = null; // persistent singleton expo-audio player
+  private currentAudioUrl: string | null = null;
   private bellPlayer: any = null; // persistent temple bell player
   private isNative = Platform.OS !== 'web';
   private isPlaying = false;
@@ -183,10 +184,20 @@ export class SpiritualAudioPlayer {
     if (ExpoAudioModule?.createAudioPlayer) {
       try {
         const source = audioUrl ? { uri: audioUrl } : SOUND_OM_DRONE;
+        const normalizedUrl = audioUrl || null;
+
+        // If player exists but audio source changed, pause previous player first
+        if (this.player && this.currentAudioUrl !== normalizedUrl) {
+          try {
+            this.player.pause();
+          } catch {}
+          this.player = null;
+        }
 
         if (!this.player) {
           this.player = ExpoAudioModule.createAudioPlayer(source);
           this.player.loop = true;
+          this.currentAudioUrl = normalizedUrl;
         }
 
         this.player.volume = this.isMuted ? 0 : 1.0;

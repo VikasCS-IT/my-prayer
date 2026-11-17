@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { Colors } from '../theme/colors';
 import { Spacing } from '../theme/spacing';
 import { Deity } from '../types';
@@ -13,6 +13,7 @@ interface DeityAvatarListProps {
 export const DeityAvatarList: React.FC<DeityAvatarListProps> = ({ deities, onSelectDeity }) => {
   const { isDarkMode, readingLanguage } = useApp();
   const theme = isDarkMode ? Colors.dark : Colors.light;
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   return (
     <View style={styles.container}>
@@ -35,6 +36,8 @@ export const DeityAvatarList: React.FC<DeityAvatarListProps> = ({ deities, onSel
               ? deity.nameHindi
               : deity.nameHindi;
 
+          const hasValidImage = Boolean(deity.imageUrl && !imageErrors[deity.id]);
+
           return (
             <TouchableOpacity
               key={deity.id}
@@ -51,7 +54,18 @@ export const DeityAvatarList: React.FC<DeityAvatarListProps> = ({ deities, onSel
                   },
                 ]}
               >
-                <Text style={styles.avatarEmoji}>{deity.avatarIcon}</Text>
+                {hasValidImage ? (
+                  <Image
+                    source={{ uri: deity.imageUrl }}
+                    style={styles.avatarImage}
+                    onError={() => {
+                      setImageErrors((prev) => ({ ...prev, [deity.id]: true }));
+                    }}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text style={styles.avatarEmoji}>{deity.avatarIcon || '🕉️'}</Text>
+                )}
               </View>
 
               <Text
@@ -106,11 +120,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 6,
+    overflow: 'hidden',
     shadowColor: '#4A0E0E',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  avatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
   },
   avatarEmoji: {
     fontSize: 30,
@@ -127,4 +147,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

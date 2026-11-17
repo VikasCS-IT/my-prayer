@@ -443,6 +443,30 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Admin Management (Supabase Dashboard) */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionHeading, { color: theme.textPrimary }]}>
+            सामग्री एवं प्रशासन • Content Management
+          </Text>
+          <View style={[styles.card, { backgroundColor: theme.surfaceCard, borderColor: theme.border }]}>
+            <TouchableOpacity
+              style={styles.actionRow}
+              onPress={() => router.push('/admin' as any)}
+            >
+              <Ionicons name="shield-checkmark" size={22} color={Colors.saffron} />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={[styles.actionText, { color: theme.textPrimary, marginLeft: 0 }]}>
+                  प्रशासन पैनल • Admin Dashboard
+                </Text>
+                <Text style={{ fontSize: 11, color: theme.textSecondary, marginTop: 2 }}>
+                  धर्म, देवी-देवता, ऑडियो व ऐप ब्रांडिंग का लाइव प्रबंधन (Supabase)
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Actions: Share & Reset */}
         <View style={styles.section}>
           <View style={[styles.card, { backgroundColor: theme.surfaceCard, borderColor: theme.border }]}>
